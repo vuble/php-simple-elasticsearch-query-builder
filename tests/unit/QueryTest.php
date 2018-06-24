@@ -68,7 +68,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
 
-        $query->orWhere(function ($query) {
+        $query->should(function ($query) {
             $query->where('field', '=', 'value');
             $query->where('field2', '=', 'value2');
         });
@@ -224,11 +224,11 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
-    public function test_orWhere_notIn_full()
+    public function test_should_notIn_full()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
 
-        $query->orWhere(function ($query) {
+        $query->should(function ($query) {
             $query->where('field', '=', 'value');
             $query->where('field2', 'NOT IN', 'value2');
         });
@@ -266,7 +266,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
 
-        $query->orWhere(function ($query) {
+        $query->should(function ($query) {
             $query->where('field', '=', 'value');
             $query->where('field2', 'NOT IN', 'value2');
         });
@@ -295,6 +295,80 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 ]
             ]
         ]], $filters);
+
+    }
+
+    /**
+     */
+    public function test_and_inside_or()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+
+        $query->should(function ($query) {
+            $query->must(function ($query) {
+                $query->where('field', '=', 'value');
+                $query->where('field2', 'NOT IN', 'value2');
+            });
+            $query->must(function ($query) {
+                $query->where('field3', '=', 'value3');
+                $query->where('field2', 'NOT IN', 'something else');
+            });
+        });
+
+        $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
+
+        // print_r($filters);
+
+        $this->assertEquals([
+            [
+                'or' => [
+                    [
+                        'bool' => [
+                            'must' => [
+                                [
+                                    'term' => [
+                                        'field' => 'value',
+                                    ]
+                                ],
+                                [
+                                    'bool' => [
+                                        'must_not' => [
+                                            [
+                                                'terms' => [
+                                                    'field2' => ['value2'],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'bool' => [
+                            'must' => [
+                                [
+                                    'term' => [
+                                        'field3' => 'value3',
+                                    ]
+                                ],
+                                [
+                                    'bool' => [
+                                        'must_not' => [
+                                            [
+                                                'terms' => [
+                                                    'field2' => ['something else'],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ], $filters);
 
     }
 

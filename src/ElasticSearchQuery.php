@@ -556,10 +556,25 @@ class ElasticSearchQuery
     /**
      * @return $this
      */
-    public function orWhere( callable $or_option_definer_callback )
+    public function should( callable $or_option_definer_callback )
     {
         $this->addFilterLevel('or', $or_option_definer_callback);
 
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function must( callable $nested_actions )
+    {
+        $this->openFilterLevel('bool');
+        $this->openFilterLevel('must', true);
+        
+        call_user_func_array($nested_actions, [$this]);
+        
+        $this->closeFilterLevel();
+        $this->closeFilterLevel();
         return $this;
     }
 
