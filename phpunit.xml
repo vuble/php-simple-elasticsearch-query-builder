@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpunit backupGlobals="false"
+         defaultTestSuite="all_tests"
+         backupStaticAttributes="true"
+         colors="true"
+         syntaxCheck="true"
+         bootstrap="./tests/bootstrap_phpunit.php"
+         >
+
+    <testsuites>
+        <testsuite name="all_tests">
+            <directory>./tests/unit</directory>
+            <!-- /!\ keep the public API after unit tests to ease debug -->
+            <directory>./tests/functionnal</directory>
+        </testsuite>
+    </testsuites>
+
+
+    <filter>
+        <!-- /!\ whitelist will exclude every outside class from coverage -->
+        <whitelist>
+            <directory suffix=".php">./src</directory>
+<!--
+            <directory suffix=".php">./tests</directory>
+-->
+        </whitelist>
+    </filter>
+
+    <logging>
+        <log type="coverage-clover" target="clover.xml"/>
+        <log type="coverage-html" target="tests_coverage/" charset="UTF-8" yui="true" />
+    </logging>
+</phpunit>
