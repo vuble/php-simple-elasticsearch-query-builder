@@ -47,11 +47,11 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
-    public function test_openFilterLevel()
+    public function test_addFilterLevel()
     {
         $query  = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
 
-        VisibilityViolator::callHiddenMethod($query, 'openFilterLevel', ['osef', function($query) {
+        VisibilityViolator::callHiddenMethod($query, 'addFilterLevel', ['osef', function($query) {
             //
         }], true);
 
@@ -225,6 +225,44 @@ class QueryTest extends \PHPUnit_Framework_TestCase
     /**
      */
     public function test_orWhere_notIn_full()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+
+        $query->orWhere(function ($query) {
+            $query->where('field', '=', 'value');
+            $query->where('field2', 'NOT IN', 'value2');
+        });
+
+        $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
+
+        // print_r($filters);
+
+        $this->assertEquals([[
+            'or' => [
+                [
+                    'term' => [
+                        'field' => 'value',
+                    ]
+                ],
+                [
+                    'bool' => [
+                        'must_not' => [
+                            [
+                                'terms' => [
+                                    'field2' => ['value2'],
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]], $filters);
+
+    }
+
+    /**
+     */
+    public function test_openOr_closeOr_notIn_full()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
 

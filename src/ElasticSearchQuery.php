@@ -331,7 +331,7 @@ class ElasticSearchQuery
 
                 // $this->filters[] = $filter_rule;
 
-                $this->openFilterLevel('or', function($query) use ($field, $values) {
+                $this->addFilterLevel('or', function($query) use ($field, $values) {
                     $this->addFilter( $this->wrapFilterIfNested( $field, [
                         [
                             'terms' => [
@@ -353,8 +353,8 @@ class ElasticSearchQuery
                 $values = [$values];
 
             // must_not has to be nested in a bool query
-            $this->openFilterLevel('bool', function($query) use ($field, $values) {
-                $this->openFilterLevel('must_not', function($query) use ($field, $values) {
+            $this->addFilterLevel('bool', function($query) use ($field, $values) {
+                $this->addFilterLevel('must_not', function($query) use ($field, $values) {
                     $this->addFilter( $this->wrapFilterIfNested( $field, [ 'terms' => [
                         $field => array_values($values),
                     ]]) );
@@ -482,7 +482,25 @@ class ElasticSearchQuery
      *
      * @return $this
      */
-    protected function openFilterLevel( $type, callable $nested_actions, $is_clause=false )
+    protected function addFilterLevel( $type, callable $nested_actions, $is_clause=false )
+    {
+        $this->openFilterLevel($type, $is_clause);
+
+        call_user_func_array($nested_actions, [$this]);
+
+        $this->closeFilterLevel();
+
+        return $this;
+    }
+
+    /**
+     * Opens a new level of filters
+     *
+     * @param string   $type           The type of filter group
+     *
+     * @return $this
+     */
+    protected function openFilterLevel( $type, $is_clause=false )
     {
         $new_filter_level = [
             'parent'   => &$this->current_filters_level,
@@ -500,13 +518,27 @@ class ElasticSearchQuery
 
         $this->current_filters_level   = &$new_filter_level;
 
-        call_user_func_array($nested_actions, [$this]);
+        return $this;
+    }
 
-        $this->current_filters_level   = &$new_filter_level['parent'];
+    /**
+     * Opens a new level of filters
+     *
+     * @param string   $type           The type of filter group
+     * @param callable $nested_actions The modifier of the query before
+     *                                 the group is closed.
+     *
+     * @return $this
+     */
+    public function closeFilterLevel()
+    {
+        $current_filters_level = &$this->current_filters_level;
+
+        $this->current_filters_level = &$current_filters_level['parent'];
 
         unset(
-             $new_filter_level['parent']
-            ,$new_filter_level['type']
+             $current_filters_level['parent']
+            ,$current_filters_level['type']
         );
 
         return $this;
@@ -526,7 +558,7 @@ class ElasticSearchQuery
      */
     public function orWhere( callable $or_option_definer_callback )
     {
-        $this->openFilterLevel('or', $or_option_definer_callback);
+        $this->addFilterLevel('or', $or_option_definer_callback);
 
         return $this;
     }
