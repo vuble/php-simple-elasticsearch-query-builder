@@ -767,7 +767,6 @@ class ElasticSearchQuery
      */
     public function execute(array $options=[])
     {
-        $this->addOperationAggregation();
         $params = $this->getSearchParams();
 
         // we disable the cache if the current day is between the ranges
