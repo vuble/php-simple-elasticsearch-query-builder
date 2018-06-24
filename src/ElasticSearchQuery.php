@@ -765,7 +765,7 @@ class ElasticSearchQuery
      *
      * @return ElasticSearch_Result
      */
-    public function execute(array $options=[])
+    public function execute($client, array $options=[])
     {
         $params = $this->getSearchParams();
 
@@ -778,18 +778,18 @@ class ElasticSearchQuery
                 // $cache_is_enabled = false;
         // }
 
-        $profiler_token = Profiler::start('es', __METHOD__ . '::' . __LINE__);
+        // $profiler_token = Profiler::start('es', __METHOD__ . '::' . __LINE__);
 
         $cache_key = hash('crc32b', var_export($params, true)).'-es';
 
         if ($cache_is_enabled && empty($options['disable_cache'])) {
-            if ($cached = Cache::get($cache_key)) {
+            if ($cached = \Cache::get($cache_key)) {
                 $result = unserialize($cached);
             }
         }
 
         if (!isset($result)) {
-            $client = ElasticSearch_Server::getClient();
+            // $client = \ElasticSearch_Server::getClient();
 
             try {
                 // echo json_encode($params);
@@ -809,14 +809,14 @@ class ElasticSearchQuery
                 // exit;
             }
 
-            Cache::set(
+            \Cache::set(
                 $cache_key,
                 serialize($result),
-                MB::$config->load('elasticSearch.query_cache') ? : 60 * 5
+                \MB::$config->load('elasticSearch.query_cache') ? : 60 * 5
             );
         }
 
-        Profiler::stop($profiler_token);
+        // Profiler::stop($profiler_token);
 
         // echo json_encode([
             // 'method' => __FILE__ . ' ' . __LINE__,
