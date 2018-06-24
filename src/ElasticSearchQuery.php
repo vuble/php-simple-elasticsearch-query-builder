@@ -49,12 +49,6 @@ class ElasticSearchQuery
      */
     const MISSING_AGGREGATION_FIELD = -1;
 
-    /** @var $type The type of query COUNT|MAX|MIN|... */
-    protected $type;
-    /** @var $field The filed on which apply the operation defined by the $type */
-    // protected $field;
-    protected $parameters = [];
-
     protected $aggregations;
     protected $current_aggregation   = [];
 
@@ -66,6 +60,9 @@ class ElasticSearchQuery
     protected $dateRanges            = [];
 
     protected $nested_fields         = [];
+    
+    
+    protected $field_renamer;
 
     /**
      * Constructor.
@@ -73,44 +70,10 @@ class ElasticSearchQuery
      * @param   string $query_type COUNT|MIN|MAX|SUM...
      * @$column string $field      All types excepted COUNT
      */
-    public function __construct($query_type, $parameters=[])
+    public function __construct()
     {
-        if ( ! in_array($query_type, $this->supportedQueryTypes()))
-            throw new \ErrorException('Unimplemented type of ES query: '
-                . $query_type);
-
-        $this->type                  = $query_type;
-        $this->parameters            = $parameters;
         $this->aggregations          = &$this->current_aggregation;
         $this->filters               = &$this->current_filters_level;
-        // $this->current_filters_level = &$this->filters;
-    }
-
-    /**
-     *
-     */
-    protected function supportedQueryTypes()
-    {
-        return [
-            // scalar results
-            self::COUNT,
-            self::AVERAGE,
-            self::MAX,
-            self::MIN,
-            self::SUM,
-            self::HISTOGRAM,
-            // self::VALUE_COUNT,
-
-            self::CARDINALITY,
-            self::PERCENTILES,
-            // self::PERCENTILES_RANKS,
-            // self::STATS,
-            self::EXTENDED_STATS,
-            // self::GEO_BOUNDS,
-            // self::GEO_CENTROID,
-            // self::SCRIPTED,
-            self::CUSTOM,
-        ];
     }
 
     /**
@@ -118,7 +81,7 @@ class ElasticSearchQuery
      */
     public function groupBy($field_alias, array $aggregation_parameters=[])
     {
-        $field = ElasticSearch_Server::addMetadataIfRequired($field_alias);
+        $field = $this->renameField($field_alias);
 
         if (!$aggregation_parameters) {
             // default aggregagtion is by term
@@ -139,7 +102,7 @@ class ElasticSearchQuery
     /**
      *
      */
-    private function aggregate($field_alias, array $aggregation_parameters)
+    private function aggregate($field_alias, array $aggregation_parameters, $change_aggregation_level=true)
     {
         if (in_array($field_alias, $this->aggregationNames) ) {
             // avoid duplicating aggregations
@@ -170,13 +133,16 @@ class ElasticSearchQuery
             $aggregation_parameters[$aggregation_type]['missing'] = self::MISSING_AGGREGATION_FIELD;
         }
 
-        $this->current_aggregation['aggregations'] = [];
+        if (!isset($this->current_aggregation['aggregations']))
+            $this->current_aggregation['aggregations'] = [];
 
         $this->current_aggregation['aggregations'][$field_alias]
             = $aggregation_parameters;
 
-        $this->current_aggregation
-            = &$this->current_aggregation['aggregations'][$field_alias];
+        if ($change_aggregation_level) {
+            $this->current_aggregation
+                = &$this->current_aggregation['aggregations'][$field_alias];
+        }
 
         return $this;
     }
@@ -272,7 +238,7 @@ class ElasticSearchQuery
     public function where($field, $operator, $values=null, $or_missing=false)
     {
         $operator = strtolower($operator);
-        // $field    = ElasticSearch_Server::addMetadataIfRequired($field);
+        // $field    = $this->renameField($field);
 
         if ($operator != 'exists' && is_null($values)) {
             throw new \InvalidArgumentException(
@@ -500,7 +466,7 @@ class ElasticSearchQuery
      *
      * @return $this
      */
-    protected function openFilterLevel( $type, $is_clause=false )
+    public function openFilterLevel( $type, $is_clause=false )
     {
         $new_filter_level = [
             'parent'   => &$this->current_filters_level,
@@ -547,7 +513,7 @@ class ElasticSearchQuery
     /**
      * @return $this
      */
-    protected function addFilter( array $filter_rule )
+    public function addFilter( array $filter_rule )
     {
         $this->current_filters_level[] = $filter_rule;
         return $this;
@@ -588,72 +554,131 @@ class ElasticSearchQuery
     }
 
     /**
+     * Defines a callback that will rename fields before the query
+     */
+    public function setFieldRenamer(callable $renamer=null)
+    {
+        $this->field_renamer = $renamer;
+        return $this;
+    }
+
+    /**
+     */
+    protected function renameField($field_name)
+    {
+        if (!is_string($field_name)) {
+            throw new \InvalidArgumentException(
+                "\$field_name must be a string instead of: " 
+                . var_export($field_name, true)
+            );
+        }
+        
+        if (!$this->field_renamer)
+            return $field_name;
+        
+        return call_user_func($this->field_renamer, $field_name);
+    }
+
+    /**
      *
      */
-    protected function addOperationAggregation()
+    protected function supportedQueryTypes()
     {
+        return [
+            // scalar results
+            self::COUNT,
+            self::AVERAGE,
+            self::MAX,
+            self::MIN,
+            self::SUM,
+            self::HISTOGRAM,
+            // self::VALUE_COUNT,
+
+            self::CARDINALITY,
+            self::PERCENTILES,
+            // self::PERCENTILES_RANKS,
+            // self::STATS,
+            self::EXTENDED_STATS,
+            // self::GEO_BOUNDS,
+            // self::GEO_CENTROID,
+            // self::SCRIPTED,
+            self::CUSTOM,
+        ];
+    }
+
+    /**
+     *
+     */
+    public function addOperationAggregation($type, array $parameters=[])
+    {
+        if ( ! in_array($type, $this->supportedQueryTypes())) {
+            throw new \ErrorException('Unimplemented type of ES query: '
+                . $type);
+        }
+                
         // Operations on data
-        if ($this->type == self::HISTOGRAM) {
-            $this->aggregate('histogram_'.$this->parameters['field'].'_'.$this->parameters['interval'], [
+        if ($type == self::HISTOGRAM) {
+            $this->aggregate('histogram_'.$parameters['field'].'_'.$parameters['interval'], [
                 'histogram' => [
-                    'field'         => ElasticSearch_Server::addMetadataIfRequired( $this->parameters['field'] ),
-                    'interval'      => $this->parameters['interval'],
+                    'field'         => $this->renameField( $parameters['field'] ),
+                    'interval'      => $parameters['interval'],
                     // 'min_doc_count' => 1,
                 ],
-            ]);
+            ], false);
         }
-        elseif ($this->type == self::COUNT) {
+        elseif ($type == self::COUNT) {
             // COUNT is calculated as a simple SEARCH ES query to enable
             // aggregations
         }
-        elseif($this->type == self::CUSTOM) {
+        elseif($type == self::CUSTOM) {
             $es_aggregation_type = 'custom';
-            $this->aggregate('calculation_'.$es_aggregation_type.'_'.$this->parameters['field'], [
-                'filters' =>
-                    $this->parameters['specific_filters'],
-            ]);
+            $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
+                'filters' => $parameters['specific_filters'],
+            ], false);
         }
         else {
 
-            if ($this->type == self::AVERAGE) {
+            if ($type == self::AVERAGE) {
                 $es_aggregation_type = 'avg';
             }
-            elseif ($this->type == self::MIN) {
+            elseif ($type == self::MIN) {
                 $es_aggregation_type = 'min';
             }
-            elseif ($this->type == self::MAX) {
+            elseif ($type == self::MAX) {
                 $es_aggregation_type = 'max';
             }
-            elseif ($this->type == self::SUM) {
+            elseif ($type == self::SUM) {
                 $es_aggregation_type = 'sum';
             }
-            elseif ($this->type == self::EXTENDED_STATS ) {
+            elseif ($type == self::EXTENDED_STATS ) {
                 $es_aggregation_type = 'extended_stats';
             }
-            elseif ($this->type == self::CARDINALITY ) {
+            elseif ($type == self::CARDINALITY ) {
                 $es_aggregation_type = 'cardinality';
-                $this->aggregate('calculation_'.$es_aggregation_type.'_'.$this->parameters['field'], [
-                    $es_aggregation_type => [
-                        'field' => ElasticSearch_Server::addMetadataIfRequired( $this->parameters['field'] ),
+                // $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
+                    // $es_aggregation_type => [
+                        // 'field' => $this->renameField( $parameters['field'] ),
                         // 'precision_threshold' => 40000,
-                    ],
-                ]);
+                    // ],
+                // ], false);
 
-                return;
+                // return;
             }
-            elseif ($this->type == self::PERCENTILES) {
+            elseif ($type == self::PERCENTILES) {
                 $es_aggregation_type = 'percentiles';
             }
             else {
-                throw new \ErrorException("Queries of type {$this->type} not implemented.");
+                throw new \ErrorException("Queries of type {$type} not implemented.");
             }
 
-            $this->aggregate('calculation_'.$es_aggregation_type.'_'.$this->parameters['field'], [
+            $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
                 $es_aggregation_type => [
-                    'field' => ElasticSearch_Server::addMetadataIfRequired( $this->parameters['field'] ),
+                    'field' => $this->renameField( $parameters['field'] ),
                 ],
-            ]);
+            ], false);
         }
+        
+        return $this;
     }
 
     /**

@@ -369,7 +369,58 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 ],
             ],
         ], $filters);
+    }
 
+    /**
+     */
+    public function test_addOperationAggregation()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_to_sum']);
+
+        $es_query = $query->getSearchParams();
+
+        $this->assertEquals([
+            'sum' => ['field' => 'field_to_sum']
+        ], $es_query['body']['aggregations']['calculation_sum_field_to_sum']);
+    }
+
+    /**
+     */
+    public function test_fieldRenamer()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query
+            ->setFieldRenamer(function($field_name) {
+                if ($field_name == 'field_to_rename')
+                    return 'renamed_field';
+                
+                return $field_name;
+            })
+            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_to_rename'])
+            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_with_good_name'])
+            ->groupBy('field_to_groupon')
+            ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_for_avg'])
+            ;
+
+            
+        $es_query = $query->getSearchParams();
+        // print_r($es_query);
+        
+        $this->assertEquals([
+            'sum' => ['field' => 'renamed_field']
+        ], $es_query['body']['aggregations']['calculation_sum_field_to_rename']);
+
+        $this->assertEquals([
+            'sum' => ['field' => 'field_with_good_name']
+        ], $es_query['body']['aggregations']['calculation_sum_field_with_good_name']);
+        
+        $this->assertEquals([
+            'avg' => ['field' => 'field_for_avg']
+        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
+        
     }
 
     /**/
