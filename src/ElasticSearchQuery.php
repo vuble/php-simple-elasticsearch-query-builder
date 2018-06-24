@@ -532,15 +532,57 @@ class ElasticSearchQuery
     /**
      * @return $this
      */
-    public function must( callable $nested_actions )
+    public function openShould()
     {
         $this->openFilterLevel('bool');
-        $this->openFilterLevel('must', true);
+        $this->openFilterLevel('should', true);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function closeShould()
+    {
+        $this->closeFilterLevel();
+        $this->closeFilterLevel();
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function must( callable $nested_actions )
+    {
+        $this->openMust();
         
         call_user_func_array($nested_actions, [$this]);
         
+        $this->closeMust();
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function openMust()
+    {
+        $this->openFilterLevel('bool');
+        $this->openFilterLevel('must', true);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function closeMust()
+    {
         $this->closeFilterLevel();
         $this->closeFilterLevel();
+
         return $this;
     }
 

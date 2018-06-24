@@ -420,7 +420,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals([
             'avg' => ['field' => 'field_for_avg']
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
-        
     }
 
     /**/
