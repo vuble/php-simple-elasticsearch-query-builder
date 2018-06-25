@@ -63,8 +63,9 @@
  *                             'doc_count' => int 101265
  *
  */
+namespace JClaveau\ElasticSearch;
 
-class ElasticSearch_Result
+class ElasticSearchResult
 {
     protected $es_result;
     /** @var COUNT Name of the column containing the number of values in the group */
@@ -199,7 +200,7 @@ class ElasticSearch_Result
 
                     $field = $group_by_key['field'];
 
-                    if ($key == ElasticSearch_Query::MISSING_AGGREGATION_FIELD)
+                    if ($key == ElasticSearchQuery::MISSING_AGGREGATION_FIELD)
                         $key = null;
 
                     $previous_aggregation_values[ $field ] = $key;

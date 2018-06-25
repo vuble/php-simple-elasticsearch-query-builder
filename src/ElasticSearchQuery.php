@@ -60,8 +60,8 @@ class ElasticSearchQuery
     protected $dateRanges            = [];
 
     protected $nested_fields         = [];
-    
-    
+
+
     protected $field_renamer;
 
     /**
@@ -238,7 +238,7 @@ class ElasticSearchQuery
     public function where($field, $operator, $values=null, $or_missing=false)
     {
         $operator = strtolower($operator);
-        // $field    = $this->renameField($field);
+        $field    = $this->renameField($field);
 
         if ($operator != 'exists' && is_null($values)) {
             throw new \InvalidArgumentException(
@@ -437,6 +437,8 @@ class ElasticSearchQuery
         else {
             throw new \ErrorException("Unhandled operator for ES query: " . $operator);
         }
+
+        return $this;
     }
 
     /**
@@ -557,9 +559,9 @@ class ElasticSearchQuery
     public function must( callable $nested_actions )
     {
         $this->openMust();
-        
+
         call_user_func_array($nested_actions, [$this]);
-        
+
         $this->closeMust();
         return $this;
     }
@@ -610,14 +612,14 @@ class ElasticSearchQuery
     {
         if (!is_string($field_name)) {
             throw new \InvalidArgumentException(
-                "\$field_name must be a string instead of: " 
+                "\$field_name must be a string instead of: "
                 . var_export($field_name, true)
             );
         }
-        
+
         if (!$this->field_renamer)
             return $field_name;
-        
+
         return call_user_func($this->field_renamer, $field_name);
     }
 
@@ -657,7 +659,7 @@ class ElasticSearchQuery
             throw new \ErrorException('Unimplemented type of ES query: '
                 . $type);
         }
-                
+
         // Operations on data
         if ($type == self::HISTOGRAM) {
             $this->aggregate('histogram_'.$parameters['field'].'_'.$parameters['interval'], [
@@ -719,7 +721,7 @@ class ElasticSearchQuery
                 ],
             ], false);
         }
-        
+
         return $this;
     }
 
@@ -736,10 +738,6 @@ class ElasticSearchQuery
                 'query' => [
                     'constant_score' => [
                         'filter' => [
-                            'bool' => [
-                                'must'     => [],
-                                // 'must_not' => [],
-                            ],
                         ]
                     ],
                 ],
@@ -748,8 +746,8 @@ class ElasticSearchQuery
             ]
         ];
 
-        $params['body']['query']['constant_score']['filter']['bool']['must']
-            = $this->filters;
+        $params['body']['query']['constant_score']['filter']
+            = $this->filters[0];
 
         if ($aggregations = $this->getAggregationsQueryPart()) {
             $params['body']['aggregations'] = $aggregations;
@@ -805,7 +803,7 @@ class ElasticSearchQuery
                     'line'    => $e->getLine(),
                     'params'  => $params,
                 ]);
-                return new ElasticSearch_Result([]);
+                return new ElasticSearchResult([]);
                 // exit;
             }
 
@@ -824,7 +822,8 @@ class ElasticSearchQuery
             // 'stats'  => Profiler::stats([$profiler_token]),
         // ]);
 
-        return new ElasticSearch_Result($result);
+        // return new ElasticSearch_Result($result);
+        return new ElasticSearchResult($result);
     }
 
     /**
