@@ -730,7 +730,6 @@ class ElasticSearchQuery
      */
     public function getSearchParams()
     {
-
         $params = [
             'index'              => $this->index_pattern,
             'ignore_unavailable' => true,                               // https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html#multi-index
@@ -746,8 +745,8 @@ class ElasticSearchQuery
             ]
         ];
 
-        $params['body']['query']['constant_score']['filter']
-            = $this->filters[0];
+        $params['body']['query']['constant_score']['filter']['bool']['must']
+            = $this->filters;
 
         if ($aggregations = $this->getAggregationsQueryPart()) {
             $params['body']['aggregations'] = $aggregations;
