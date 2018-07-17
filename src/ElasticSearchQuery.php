@@ -593,6 +593,9 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     public function setIndex($index_pattern)
     {
+        if (is_array($index_pattern))
+            $index_pattern = implode(',', $index_pattern);
+        
         $this->index_pattern = $index_pattern;
         return $this;
     }

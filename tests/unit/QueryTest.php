@@ -437,5 +437,24 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     */
+    public function test_setIndex()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->setIndex( 'my_index' );
+        $this->assertEquals(
+            'my_index'
+            , $query->getSearchParams()['index']
+        );
+        
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->setIndex( ['my_index', 'my_index2'] );
+        $this->assertEquals(
+            'my_index,my_index2'
+            , $query->getSearchParams()['index']
+        );
+    }
+
     /**/
 }
