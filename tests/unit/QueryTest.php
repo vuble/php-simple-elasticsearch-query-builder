@@ -422,5 +422,20 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
     }
 
+    /**
+     */
+    public function test_json_encode()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->where('field', '<', 'value');
+        
+        $json = \json_encode($query);
+        
+        $this->assertEquals(
+            '{"index":null,"ignore_unavailable":true,"body":{"query":{"constant_score":{"filter":{"bool":{"must":[{"range":{"field":{"lt":"value"}}}]}}}},"aggregations":null,"size":0}}'
+            , $json
+        );
+    }
+
     /**/
 }
