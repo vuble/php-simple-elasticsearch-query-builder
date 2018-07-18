@@ -5,15 +5,9 @@ use JClaveau\VisibilityViolator\VisibilityViolator;
 
 
 /**
- * Video::getPrice
  */
 class QueryTest extends \PHPUnit_Framework_TestCase
 {
-    protected function setUp()
-    {
-        return parent::setUp();
-    }
-
     /**
      */
     public function test_where_equal()
@@ -429,8 +423,8 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 
                 return $field_name;
             })
-            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_to_rename'])
-            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_with_good_name'])
+            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_to_rename'], false)
+            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_with_good_name'], false)
             ->groupBy('field_to_groupon')
             ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_for_avg'])
             ;

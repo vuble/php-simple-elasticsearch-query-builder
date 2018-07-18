@@ -65,7 +65,7 @@
  */
 namespace JClaveau\ElasticSearch;
 
-class ElasticSearchResult
+class ElasticSearchResult implements \JsonSerializable 
 {
     protected $es_result;
     /** @var COUNT Name of the column containing the number of values in the group */
@@ -543,5 +543,12 @@ class ElasticSearchResult
         return !$this->es_result ? null : $this->es_result;
     }
 
+    /**
+     * @see https://secure.php.net/manual/en/jsonserializable.jsonserialize.php
+     */
+    public function jsonSerialize() {
+        return $this->getResults();
+    }
+    
     /**/
 }
