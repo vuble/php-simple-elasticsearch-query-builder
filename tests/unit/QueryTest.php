@@ -388,6 +388,36 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_addOperationAggregation_after_group_bys()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query
+            ->groupBy('field_1')
+            ->groupBy('field_2')
+            ->addOperationAggregation( ElasticSearchQuery::SUM,     ['field' => 'field_to_sum'])
+            ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_to_avg'])
+            ;
+
+        $es_query = $query->getSearchParams();
+        $operations = $es_query['body']
+            ['aggregations']['group_by_field_1']
+            ['aggregations']['group_by_field_2']
+            ['aggregations']
+            ;
+            
+        
+        $this->assertEquals([
+            'sum' => ['field' => 'field_to_sum']
+        ], $operations['calculation_sum_field_to_sum']);
+
+        $this->assertEquals([
+            'avg' => ['field' => 'field_to_avg']
+        ], $operations['calculation_avg_field_to_avg']);
+    }
+
+    /**
+     */
     public function test_fieldRenamer()
     {
         $query = new ElasticSearchQuery;

@@ -654,9 +654,20 @@ class ElasticSearchQuery implements \JsonSerializable
     }
 
     /**
+     * ES allows operations at each level of the nested tree of aggregations
+     * but mostly those at the end are easy to understand.
+     * This quee stores operations that must be added at the very last level
+     * of the aggregation tree.
+     * 
+     * This list would be added
+     * 
+     */
+    protected $queued_leaf_perations = [];
+
+    /**
      *
      */
-    public function addOperationAggregation($type, array $parameters=[])
+    public function addOperationAggregation($type, array $parameters=[], $as_leaf_of_aggregation_tree=true)
     {
         if ( ! in_array($type, $this->supportedQueryTypes())) {
             throw new \ErrorException('Unimplemented type of ES query: '
@@ -718,11 +729,20 @@ class ElasticSearchQuery implements \JsonSerializable
                 throw new \ErrorException("Queries of type {$type} not implemented.");
             }
 
-            $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
-                $es_aggregation_type => [
-                    'field' => $this->renameField( $parameters['field'] ),
-                ],
-            ], false);
+            if ($as_leaf_of_aggregation_tree) {
+                $this->queued_leaf_perations['calculation_'.$es_aggregation_type.'_'.$parameters['field']] = [
+                    $es_aggregation_type => [
+                        'field' => $this->renameField( $parameters['field'] ),
+                    ],
+                ];
+            }
+            else {
+                $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
+                    $es_aggregation_type => [
+                        'field' => $this->renameField( $parameters['field'] ),
+                    ],
+                ], false);
+            }
         }
 
         return $this;
@@ -750,6 +770,11 @@ class ElasticSearchQuery implements \JsonSerializable
 
         $params['body']['query']['constant_score']['filter']['bool']['must']
             = $this->filters;
+
+        foreach ($this->queued_leaf_perations as $name => $aggregation_parameters) {
+            $this->aggregate($name, $aggregation_parameters, false);
+        }
+
 
         if ($aggregations = $this->getAggregationsQueryPart()) {
             $params['body']['aggregations'] = $aggregations;
