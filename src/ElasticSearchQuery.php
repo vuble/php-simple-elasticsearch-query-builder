@@ -170,10 +170,16 @@ class ElasticSearchQuery implements \JsonSerializable
         if (!$this->nested_fields)
             return $filter;
 
+        $is_nested = false;
+
         foreach ($this->nested_fields as $nested_field) {
             if (preg_match("#^".preg_quote($nested_field, '#')."#", $field)) {
+                $is_nested = true;
                 break;
             }
+        }
+
+        if (!$is_nested) {
             return $filter;
         }
 
