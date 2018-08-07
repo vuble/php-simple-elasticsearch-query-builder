@@ -2,5 +2,5 @@
 /.idea
 /tests_coverage
 /docs/phpdoc
-/composer.lock
 /clover.xml
+composer.lock
