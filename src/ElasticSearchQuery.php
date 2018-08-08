@@ -595,7 +595,7 @@ class ElasticSearchQuery implements \JsonSerializable
     {
         if (is_array($index_pattern))
             $index_pattern = implode(',', $index_pattern);
-        
+
         $this->index_pattern = $index_pattern;
         return $this;
     }
@@ -658,11 +658,13 @@ class ElasticSearchQuery implements \JsonSerializable
      * but mostly those at the end are easy to understand.
      * This quee stores operations that must be added at the very last level
      * of the aggregation tree.
-     * 
+     *
      * This list would be added
-     * 
+     *
      */
     protected $queued_leaf_perations = [];
+
+    protected $operations = [];
 
     /**
      *
@@ -673,6 +675,12 @@ class ElasticSearchQuery implements \JsonSerializable
             throw new \ErrorException('Unimplemented type of ES query: '
                 . $type);
         }
+
+        $this->operations[] = [
+            'type' => $type,
+            'parameters' => $parameters,
+            'is_leaf_operation' => $as_leaf_of_aggregation_tree,
+        ];
 
         // Operations on data
         if ($type == self::HISTOGRAM) {
@@ -746,6 +754,13 @@ class ElasticSearchQuery implements \JsonSerializable
         }
 
         return $this;
+    }
+
+    /**
+     */
+    public function getOperations()
+    {
+        return $this->operations;
     }
 
     /**
@@ -922,6 +937,6 @@ class ElasticSearchQuery implements \JsonSerializable
     {
         return $this->getSearchParams();
     }
-    
+
     /**/
 }
