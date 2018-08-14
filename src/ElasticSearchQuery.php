@@ -777,6 +777,10 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     public function getSearchParams()
     {
+        foreach ($this->queued_leaf_perations as $name => $aggregation_parameters) {
+            $this->aggregate($name, $aggregation_parameters, false);
+        }
+        
         $params = [
             'index'              => $this->index_pattern,
             'ignore_unavailable' => true,                               // https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html#multi-index
@@ -795,14 +799,11 @@ class ElasticSearchQuery implements \JsonSerializable
         $params['body']['query']['constant_score']['filter']['bool']['must']
             = $this->filters;
 
-        foreach ($this->queued_leaf_perations as $name => $aggregation_parameters) {
-            $this->aggregate($name, $aggregation_parameters, false);
-        }
 
 
-        if ($aggregations = $this->getAggregationsQueryPart()) {
-            $params['body']['aggregations'] = $aggregations;
-        }
+        // if ($aggregations = $this->getAggregationsQueryPart()) {
+            // $params['body']['aggregations'] = $aggregations;
+        // }
 
         return $params;
     }
