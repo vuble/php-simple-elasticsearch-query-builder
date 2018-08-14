@@ -702,6 +702,7 @@ class ElasticSearchQuery implements \JsonSerializable
         elseif ($type == self::COUNT) {
             // COUNT is calculated as a simple SEARCH ES query to enable
             // aggregations
+            return $this;
         }
         elseif($type == self::CUSTOM) {
             $name   = 'calculation_custom_'

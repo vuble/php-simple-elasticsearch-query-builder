@@ -471,6 +471,61 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_addOperationAggregation_all_types()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query
+            ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field'], false)
+            ->groupBy('field_to_groupon')
+            ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_for_avg'])
+            ->addOperationAggregation( ElasticSearchQuery::HISTOGRAM, [
+                'field' => 'field-for-histogram',
+                'interval' => 2,
+            ])
+            ->addOperationAggregation( ElasticSearchQuery::CUSTOM, [
+                'field'            => 'field-for-custom',
+                'specific_filters' => 'custom_filters',
+            ])
+            ;
+
+            
+        $es_query = $query->getSearchParams();
+        // print_r($es_query);
+        
+        $this->assertEquals([
+            'sum' => ['field' => 'field']
+        ], $es_query['body']['aggregations']['calculation_sum_field']);
+
+        $this->assertEquals([
+            'avg' => ['field' => 'field_for_avg']
+        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
+        
+        $this->assertEquals([
+            'histogram' => [
+                'field'         => 'field-for-histogram',
+                'interval'      => 2,
+                // 'min_doc_count' => 1,
+            ],
+        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['histogram_field-for-histogram_2']);
+
+        $this->assertEquals([
+            'filters' => 'custom_filters'
+        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']
+                                            ['calculation_custom_field-for-custom_c5438a396e5e1b0c693a325c0403c4f3']
+        );
+        
+        // COUNT do not require aggregation
+        $query = new ElasticSearchQuery;
+        $query
+            ->addOperationAggregation( ElasticSearchQuery::COUNT, ['field' => 'field'], false);
+        $es_query = $query->getSearchParams();
+        
+        $this->assertEquals(null, $es_query['body']['aggregations']);
+    }
+
+    /**
+     */
     public function test_json_encode()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
