@@ -690,23 +690,26 @@ class ElasticSearchQuery implements \JsonSerializable
 
         // Operations on data
         if ($type == self::HISTOGRAM) {
-            $this->aggregate('histogram_'.$parameters['field'].'_'.$parameters['interval'], [
+            $name   = 'histogram_'.$parameters['field'].'_'.$parameters['interval'];
+            $params = [
                 'histogram' => [
                     'field'         => $this->renameField( $parameters['field'] ),
                     'interval'      => $parameters['interval'],
                     // 'min_doc_count' => 1,
                 ],
-            ], false);
+            ];
         }
         elseif ($type == self::COUNT) {
             // COUNT is calculated as a simple SEARCH ES query to enable
             // aggregations
         }
         elseif($type == self::CUSTOM) {
-            $es_aggregation_type = 'custom';
-            $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
+            $name   = 'calculation_custom_'
+                    . $parameters['field']
+                    . '_'.hash('md4', serialize($parameters['specific_filters']));
+            $params = [
                 'filters' => $parameters['specific_filters'],
-            ], false);
+            ];
         }
         else {
 
@@ -742,21 +745,21 @@ class ElasticSearchQuery implements \JsonSerializable
             else {
                 throw new \ErrorException("Queries of type {$type} not implemented.");
             }
+            
+            $name   = 'calculation_'.$es_aggregation_type.'_'.$parameters['field'];
+            $params = [
+                $es_aggregation_type => [
+                    'field' => $this->renameField( $parameters['field'] ),
+                ],
+            ];
+        }
 
-            if ($as_leaf_of_aggregation_tree) {
-                $this->queued_leaf_perations['calculation_'.$es_aggregation_type.'_'.$parameters['field']] = [
-                    $es_aggregation_type => [
-                        'field' => $this->renameField( $parameters['field'] ),
-                    ],
-                ];
-            }
-            else {
-                $this->aggregate('calculation_'.$es_aggregation_type.'_'.$parameters['field'], [
-                    $es_aggregation_type => [
-                        'field' => $this->renameField( $parameters['field'] ),
-                    ],
-                ], false);
-            }
+        if ($as_leaf_of_aggregation_tree) {
+            // we queue now to call aggregate at the end
+            $this->queued_leaf_perations[$name] = $params;
+        }
+        else {
+            $this->aggregate($name, $params, false);
         }
 
         return $this;

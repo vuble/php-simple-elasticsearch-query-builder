@@ -427,6 +427,14 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_with_good_name'], false)
             ->groupBy('field_to_groupon')
             ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_for_avg'])
+            ->addOperationAggregation( ElasticSearchQuery::HISTOGRAM, [
+                'field' => 'field-for-histogram',
+                'interval' => 2,
+            ])
+            ->addOperationAggregation( ElasticSearchQuery::CUSTOM, [
+                'field'            => 'field-for-custom',
+                'specific_filters' => 'custom_filters',
+            ])
             ;
 
             
@@ -444,6 +452,21 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals([
             'avg' => ['field' => 'field_for_avg']
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
+        
+        $this->assertEquals([
+            'histogram' => [
+                'field'         => 'field-for-histogram',
+                'interval'      => 2,
+                // 'min_doc_count' => 1,
+            ],
+        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['histogram_field-for-histogram_2']);
+
+        $this->assertEquals([
+            'filters' => 'custom_filters'
+        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']
+                                            ['calculation_custom_field-for-custom_c5438a396e5e1b0c693a325c0403c4f3']
+        );
+        
     }
 
     /**
