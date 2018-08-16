@@ -366,23 +366,22 @@ class ElasticSearchResult implements \JsonSerializable
     protected function findLastNonNestedParentAggregation($group_by_aggregation)
     {
         // loop back to root
-        $non_nested_aggragations = [
-            $group_by_aggregation,
-        ];
+        $non_nested_aggragations = $group_by_aggregation;
         $parent = $group_by_aggregation;
         while (!empty($parent['parent'])) {
+            // The aggregation type of the current node is saved on the parent
             if ($parent['parent']['aggregation_type'] == 'nested') {
                 // we flush all the kept aggregations as they are under a nested one.
-                $non_nested_aggragations = [];
+                $non_nested_aggragations = false;
             }
-            else {
-                $non_nested_aggragations[] = $parent;
+            elseif (empty($non_nested_aggragations)) {
+                $non_nested_aggragations = $parent;
             }
 
             $parent = $parent['parent'];
         }
 
-        return reset($non_nested_aggragations);
+        return $non_nested_aggragations;
     }
 
     /**
