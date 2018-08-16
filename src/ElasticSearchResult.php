@@ -371,7 +371,7 @@ class ElasticSearchResult implements \JsonSerializable
         ];
         $parent = $group_by_aggregation;
         while (!empty($parent['parent'])) {
-            if ($parent['aggregation_type'] == 'nested') {
+            if ($parent['parent']['aggregation_type'] == 'nested') {
                 // we flush all the kept aggregations as they are under a nested one.
                 $non_nested_aggragations = [];
             }
