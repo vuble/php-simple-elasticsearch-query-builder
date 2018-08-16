@@ -13,6 +13,9 @@
             <!-- /!\ keep the public API after unit tests to ease debug -->
             <directory>./tests/functionnal</directory>
         </testsuite>
+        <testsuite name="unit">
+            <directory>./tests/unit</directory>
+        </testsuite>
         <testsuite name="profiling">
             <directory>./tests/profiling</directory>
         </testsuite>
