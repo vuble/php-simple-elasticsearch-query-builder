@@ -843,21 +843,18 @@ class ElasticSearchQuery implements \JsonSerializable
             // $client = \ElasticSearch_Server::getClient();
 
             try {
-                // echo json_encode($params);
-                // exit;
                 $result = $client->search($params);
             }
             catch (\Exception $e) {
-                // throw $e;
-                // http_response_code(500);
-                echo json_encode([
-                    'message' => $e->getMessage(),
-                    'file'    => $e->getFile(),
-                    'line'    => $e->getLine(),
-                    'params'  => $params,
-                ]);
-                return new ElasticSearchResult([]);
-                // exit;
+                $es_response = json_decode($e->getMessage(), JSON_OBJECT_AS_ARRAY);
+
+                throw new \RuntimeException(
+                    get_class($e).": {$es_response['error']['caused_by']['reason']}\n"
+                    .$e->getFile().' - '.$e->getLine()."\n\n"
+                    .json_encode($es_response, JSON_PRETTY_PRINT)."\n\n"
+                    ."Failing Request: \n"
+                    .json_encode($params)."\n\n"
+                );
             }
 
             \Cache::set(
