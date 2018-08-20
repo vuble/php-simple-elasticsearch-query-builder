@@ -212,7 +212,7 @@ class ResultTest extends \PHPUnit_Framework_TestCase
                     "hits" => [
                         [
                             "_index" => "index1",
-                            "_type" => "mediaevent",
+                            "_type" => "event",
                             "_score" => 1,
                             "_source" => [
                                 "entry" => "data",
@@ -230,7 +230,7 @@ class ResultTest extends \PHPUnit_Framework_TestCase
                 "hits" => [
                     [
                         "_index" => "index1",
-                        "_type" => "mediaevent",
+                        "_type" => "event",
                         "_score" => 1,
                         "_source" => [
                             "entry" => "data",
@@ -240,6 +240,55 @@ class ResultTest extends \PHPUnit_Framework_TestCase
                 ]
             ],
             $result->getHits()
+        );
+    }
+
+    /**
+     * @unit
+     */
+    public function test_getResults()
+    {
+        $result = new ElasticSearchResult(
+            [
+                "took" => 1,
+                "timed_out" => false,
+                "hits" => [
+                    "total" => 1,
+                    "hits" => [
+                        [
+                            "_index" => "index1",
+                            "_type" => "event",
+                            "_score" => 1,
+                            "_source" => [
+                                "entry" => "data",
+                                "entry2" => 1
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        );
+
+        $this->assertEquals(
+            [
+                "took" => 1,
+                "timed_out" => false,
+                "hits" => [
+                    "total" => 1,
+                    "hits" => [
+                        [
+                            "_index" => "index1",
+                            "_type" => "event",
+                            "_score" => 1,
+                            "_source" => [
+                                "entry" => "data",
+                                "entry2" => 1
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            $result->getResults()
         );
     }
 
