@@ -198,5 +198,50 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @unit
+     */
+    public function test_getHits()
+    {
+        $result = new ElasticSearchResult(
+            [
+                "took" => 1,
+                "timed_out" => false,
+                "hits" => [
+                    "total" => 1,
+                    "hits" => [
+                        [
+                            "_index" => "index1",
+                            "_type" => "mediaevent",
+                            "_score" => 1,
+                            "_source" => [
+                                "entry" => "data",
+                                "entry2" => 1
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        );
+
+        $this->assertEquals(
+            [
+                "total" => 1,
+                "hits" => [
+                    [
+                        "_index" => "index1",
+                        "_type" => "mediaevent",
+                        "_score" => 1,
+                        "_source" => [
+                            "entry" => "data",
+                            "entry2" => 1
+                        ]
+                    ]
+                ]
+            ],
+            $result->getHits()
+        );
+    }
+
     /**/
 }
