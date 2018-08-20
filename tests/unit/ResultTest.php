@@ -55,5 +55,73 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @unit
+     */
+    public function test_getAsSqlResult_RootNestedAggregations()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                'hits' => [
+                    'total' => 12348,
+                    'max_score' => 1,
+                    'hits' => []
+                ],
+                'aggregations' => [
+                    'nested_deals' => [
+                        'doc_count' => 47288,
+                        'filter_deal_id' => [
+                            'doc_count' => 47288,
+                            'group_by_deals.deal_id' => [
+                                'buckets' => [
+                                    0 => [
+                                        'key' => 'DEAL1',
+                                        'doc_count' => 12349,
+                                    ],
+                                    1 => [
+                                        'key' => 'DEAL2',
+                                        'doc_count' => 12346,
+                                    ],
+                                    2 => [
+                                        'key' => 'DEAL3',
+                                        'doc_count' => 12347,
+                                    ],
+                                    3 => [
+                                        'key' => 'DEAL4',
+                                        'doc_count' => 9974,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            $result,
+            [
+                'deals.deal_id:DEAL1' => [
+                    'deals.deal_id' => 'DEAL1',
+                    'total' => 12348,
+                ],
+                'deals.deal_id:DEAL2' => [
+                    'deals.deal_id' => 'DEAL2',
+                    'total' => 12346,
+                ],
+                'deals.deal_id:DEAL3' => [
+                    'deals.deal_id' => 'DEAL3',
+                    'total' => 12347,
+                ],
+                'deals.deal_id:DEAL4' => [
+                    'deals.deal_id' => 'DEAL4',
+                    'total' => 9974,
+                ],
+            ]
+        );
+    }
+
     /**/
 }
