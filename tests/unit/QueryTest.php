@@ -558,5 +558,42 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     */
+    public function test_scriptWhere()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+
+        $query->should(function ($query) {
+            $query->where('field', 'SCRIPT', 'script_1');
+            $query->where('field2', 'SCRIPT', 'script_2');
+        });
+
+        $aggregations = VisibilityViolator::getHiddenProperty($query, 'aggregations');
+
+        $this->assertEquals([
+            "aggregations" => [
+                "group_by_field" => [
+                    "terms" => [
+                        "field" => "field",
+                        "script" => "script_1",
+                        "size" => 0,
+                        "missing" => -1
+                    ],
+                    "aggregations" => [
+                        "group_by_field2" => [
+                            "terms" => [
+                                "field" => "field2",
+                                "script" => "script_2",
+                                "size" => 0,
+                                "missing" => -1
+                            ]
+                        ]
+                    ],
+                ]
+            ],
+        ], $aggregations);
+    }
+
     /**/
 }
