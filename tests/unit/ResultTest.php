@@ -27,14 +27,87 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     public function test_getAsSqlResult()
     {
         $result = (new ElasticSearchResult(
-            require_once __DIR__.'/../data/ElasticSearchResultTest_ES_Result_BigAggregation.php'
+            [
+                'hits' => [
+                    'hits' => []
+                ],
+                'aggregations' => [
+                    'group_by_id' => [
+                        'buckets' => [
+                            0 => [
+                                'key' => 529,
+                                'doc_count' => 12347,
+                                'group_by_aid' => [
+                                    'buckets' => [
+                                        0 => [
+                                            'key' => 1021374,
+                                            'doc_count' => 15732,
+                                            'group_by_type' => [
+                                                'buckets' => [
+                                                    0 => [
+                                                        'key' => 'impression',
+                                                        'doc_count' => 15732,
+                                                        'group_by_cid' => [
+                                                            'buckets' => [
+                                                                0 => [
+                                                                    'key' => 0,
+                                                                    'doc_count' => 15732,
+                                                                ],
+                                                            ],
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                        1 => [
+                                            'key' => 7020009,
+                                            'doc_count' => 13032,
+                                            'group_by_type' => [
+                                                'buckets' => [
+                                                    0 => [
+                                                        'key' => 'impression',
+                                                        'doc_count' => 13032,
+                                                        'group_by_cid' => [
+                                                            'buckets' => [
+                                                                0 => [
+                                                                        'key' => 1234,
+                                                                        'doc_count' => 13032,
+                                                                ],
+                                                            ],
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]
         ))
         ->getAsSqlResult()
         ;
 
         $this->assertEquals(
             $result,
-            require_once __DIR__.'/../data/ElasticSearchResultTest_ES_Result_As_Sql_BigAggregation.php'
+            [
+                'id:529-aid:1021374-type:impression-cid:0' => [
+                    'id' => 529,
+                    'aid' => '1021374',
+                    'type' => 'impression',
+                    'cid' => '0',
+                    'total' => 15732,
+                ],
+                'id:529-aid:7020009-type:impression-cid:1234' => [
+                    'id' => 529,
+                    'aid' => '7020009',
+                    'type' => 'impression',
+                    'cid' => '1234',
+                    'total' => 13032,
+                ],
+            ]
         );
     }
 
