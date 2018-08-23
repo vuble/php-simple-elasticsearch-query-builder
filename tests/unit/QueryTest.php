@@ -412,6 +412,43 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_group_by_nested_fields()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query
+            ->setNestedFields(['nest'])
+            ->groupBy('field_1')
+            ->groupBy('nest.field_1')
+            ->groupBy('nest.field_2')
+            ->groupBy('field_2')
+            // ->addOperationAggregation( ElasticSearchQuery::SUM,     ['field' => 'field_to_sum'])
+            // ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_to_avg'])
+            ;
+
+        $es_query = $query->getSearchParams();
+        // print_r($es_query);
+        // exit;
+        
+        $this->assertEquals( 
+            [
+                'terms' => [
+                    'field'   => 'nest.field_2',
+                    'size'    => 0,
+                    'missing' => -1,
+                ]
+            ],
+            $es_query['body']
+            ['aggregations']['group_by_field_1']
+            ['aggregations']['group_by_field_2']
+            ['aggregations']['group_by_nest.field_1']
+            ['aggregations']['group_by_nest.field_2']
+        );
+        
+    }
+
+    /**
+     */
     public function test_fieldRenamer()
     {
         $query = new ElasticSearchQuery;

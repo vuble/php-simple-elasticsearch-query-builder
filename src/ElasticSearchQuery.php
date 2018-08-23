@@ -76,6 +76,9 @@ class ElasticSearchQuery implements \JsonSerializable
         $this->filters               = &$this->current_filters_level;
     }
 
+    /** @var array $group_by_aggregations_on_nested_fields */
+    protected $group_by_aggregations_on_nested_fields = [];
+
     /**
      * groupBy corresponds to the most basic aggregation type.
      */
@@ -91,8 +94,18 @@ class ElasticSearchQuery implements \JsonSerializable
                 ],
             ];
         }
-
-        $this->aggregate('group_by_'.$field_alias, $aggregation_parameters);
+        
+        if ($this->fieldIsNested($field)) {
+            // setting an aggregation on non nested field inside another 
+            // one concerning nested fields would produce elastic search errors :
+            // Elasticsearch\Common\Exceptions\ServerErrorResponseException: 
+            // Merging/Reducing the aggregations failed when computing the aggregation [ Name: group_by_deals.win, Type: terms ] because: the field you gave in the aggregation query existed as two different types in two different indices
+            if (!isset($this->group_by_aggregations_on_nested_fields[$field]))
+                $this->group_by_aggregations_on_nested_fields['group_by_'.$field_alias] = $aggregation_parameters;
+        }
+        else {
+            $this->aggregate('group_by_'.$field_alias, $aggregation_parameters);
+        }
 
         return $this;
     }
@@ -167,21 +180,8 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     protected function wrapFilterIfNested($field, $filter)
     {
-        if (!$this->nested_fields)
+        if (!$this->fieldIsNested($field))
             return $filter;
-
-        $is_nested = false;
-
-        foreach ($this->nested_fields as $nested_field) {
-            if (preg_match("#^".preg_quote($nested_field, '#')."#", $field)) {
-                $is_nested = true;
-                break;
-            }
-        }
-
-        if (!$is_nested) {
-            return $filter;
-        }
 
         $new_filter = [
             "nested" => [
@@ -778,6 +778,10 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     public function getSearchParams()
     {
+        foreach ($this->group_by_aggregations_on_nested_fields as $name => $aggregation_parameters) {
+            $this->aggregate($name, $aggregation_parameters);
+        }
+        
         foreach ($this->queued_leaf_perations as $name => $aggregation_parameters) {
             $this->aggregate($name, $aggregation_parameters, false);
         }
@@ -944,6 +948,31 @@ class ElasticSearchQuery implements \JsonSerializable
     public function jsonSerialize()
     {
         return $this->getSearchParams();
+    }
+
+    /**
+     */
+    public function setNestedFields(array $fields)
+    {
+        $this->nested_fields = $fields;
+        return $this;
+    }
+
+    /**
+     * Checks if a field is nested based on the list of nested fields
+     * 
+     * @param  string The field to check 
+     * 
+     * @return bool
+     */
+    public function fieldIsNested($field)
+    {
+        if ($this->nested_fields) foreach ($this->nested_fields as $nested_field) {
+            if (preg_match("#^".preg_quote($nested_field, '#')."#", $field))
+                return true;
+        }
+        
+        return false;
     }
 
     /**/
