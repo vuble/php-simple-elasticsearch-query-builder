@@ -320,7 +320,7 @@ class ElasticSearchQuery implements \JsonSerializable
             }
 
         }
-        elseif ($operator == 'not in') {
+        elseif ($operator == 'not in' || $operator == '!in') {
             if (!is_array($values))
                 $values = [$values];
 
