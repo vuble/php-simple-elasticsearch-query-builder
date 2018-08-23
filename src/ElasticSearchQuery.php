@@ -440,6 +440,14 @@ class ElasticSearchQuery implements \JsonSerializable
                 $field => $values,
             ]]);
         }
+        elseif ($operator === 'script') {
+            $this->aggregate('group_by_'.$field, [
+                'terms' => [
+                    'field'  => $field,
+                    'script' => $values
+                ]
+            ]);
+        }
         else {
             throw new \ErrorException("Unhandled operator for ES query: " . $operator);
         }
