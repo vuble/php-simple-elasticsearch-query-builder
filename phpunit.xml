@@ -13,6 +13,12 @@
             <!-- /!\ keep the public API after unit tests to ease debug -->
             <directory>./tests/functionnal</directory>
         </testsuite>
+        <testsuite name="unit">
+            <directory>./tests/unit</directory>
+        </testsuite>
+        <testsuite name="profiling">
+            <directory>./tests/profiling</directory>
+        </testsuite>
     </testsuites>
 
 
@@ -25,6 +31,34 @@
 -->
         </whitelist>
     </filter>
+
+    <listeners>
+        <listener class="JClaveau\PHPUnit\Listener\StopwatchListener" />
+        <listener class="PHPUnit\XHProfTestListener\XHProfTestListener">
+            <arguments>
+                <array>
+                    <element key="xhprofLibFile">
+                        <string>./vendor/jclaveau/xhprof/xhprof_lib/utils/xhprof_lib.php</string>
+                    </element>
+                    <element key="xhprofRunsFile">
+                        <string>./vendor/jclaveau/xhprof/xhprof_lib/utils/xhprof_runs.php</string>
+                    </element>
+                    <element key="xhprofWeb">
+                        <string>http://xhprof.loc/index.php</string>
+                    </element>
+                    <element key="appNamespace">
+                        <string>php-simple-elasticsearch-query-builder</string>
+                    </element>
+                    <element key="xhprofFlags">
+                        <string>XHPROF_FLAGS_CPU,XHPROF_FLAGS_MEMORY</string>
+                    </element>
+                    <element key="xhprofIgnore">
+                        <string>call_user_func,call_user_func_array</string>
+                    </element>
+                </array>
+            </arguments>
+        </listener>
+    </listeners>
 
     <logging>
         <log type="coverage-clover" target="clover.xml"/>

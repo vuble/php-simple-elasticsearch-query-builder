@@ -112,7 +112,8 @@ class ElasticSearchResult implements \JsonSerializable
     protected function simplifyAggregations(
         array $aggregation_node,
         array $previous_aggregation_values=[],
-        array $parent=[]
+        array $parent=[],
+        $last_nonnested_parent_doc_count=0
     ) {
         // Debug::dumpJson([
             // '$this->es_result'  => $this->es_result,
@@ -121,7 +122,7 @@ class ElasticSearchResult implements \JsonSerializable
 
         $aggregation_node['parent'] = $parent;
 
-        if ($last_nonnested_parent = $this->findLastNonNestedParentAggregation($parent)) {
+        if (isset($parent['aggregation_type']) && $parent['aggregation_type'] == "nested" && !$last_nonnested_parent_doc_count) {
             // Grouping aggregations on nested fields produce a doc_count which is
             // the sum of every group by and will count duplicates. Example where
             // the nested doc_count 7751686 is bigger than it's non-nested parent
@@ -154,17 +155,21 @@ class ElasticSearchResult implements \JsonSerializable
             //     ]
             //   }
             // }
-            if (!isset($last_nonnested_parent['doc_count']) && !$last_nonnested_parent['parent']) {
-                // get the doc count from the hits
-                $nonnested_doc_count = $this->es_result['hits']['total'];
+            // We're on our first nested aggregation. We get the last non nested one and get the doc_count.
+            // If there isn't one, meaning our nested aggregation is the root aggregation, we get the hits.
+            if ($last_nonnested_parent = $this->findLastNonNestedParentAggregation($parent)) {
+                if (!isset($last_nonnested_parent['doc_count']) && !$last_nonnested_parent['parent']) {
+                    // get the doc count from the hits
+                    $last_nonnested_parent_doc_count = $this->es_result['hits']['total'];
+                }
+                else {
+                    $last_nonnested_parent_doc_count = $last_nonnested_parent['doc_count'];
+                }
             }
-            else {
-                $nonnested_doc_count = $last_nonnested_parent['doc_count'];
-            }
+        }
 
-            if ($nonnested_doc_count < $aggregation_node['doc_count']) {
-                $aggregation_node['doc_count'] = $nonnested_doc_count;
-            }
+        if ($last_nonnested_parent_doc_count && $last_nonnested_parent_doc_count < $aggregation_node['doc_count']) {
+            $aggregation_node['doc_count'] = $last_nonnested_parent_doc_count;
         }
 
         $out = [];
@@ -210,7 +215,8 @@ class ElasticSearchResult implements \JsonSerializable
                     $sub_rows = $this->simplifyAggregations(
                         $bucket,
                         $previous_aggregation_values,
-                        $aggregation_node
+                        $aggregation_node,
+                        $last_nonnested_parent_doc_count
                     );
                     $out = array_merge_recursive($out, $sub_rows);
                 }
@@ -266,7 +272,8 @@ class ElasticSearchResult implements \JsonSerializable
             $sub_rows = $this->simplifyAggregations(
                 $aggregation_node[ $skipable_aggregation_infos['key'] ],
                 $previous_aggregation_values,
-                $aggregation_node
+                $aggregation_node,
+                $last_nonnested_parent_doc_count
             );
             $out = array_merge_recursive($out, $sub_rows);
         }
@@ -366,23 +373,22 @@ class ElasticSearchResult implements \JsonSerializable
     protected function findLastNonNestedParentAggregation($group_by_aggregation)
     {
         // loop back to root
-        $non_nested_aggragations = [
-            $group_by_aggregation,
-        ];
+        $non_nested_aggragations = $group_by_aggregation;
         $parent = $group_by_aggregation;
         while (!empty($parent['parent'])) {
-            if ($parent['aggregation_type'] == 'nested') {
+            // The aggregation type of the current node is saved on the parent
+            if ($parent['parent']['aggregation_type'] == 'nested') {
                 // we flush all the kept aggregations as they are under a nested one.
-                $non_nested_aggragations = [];
+                $non_nested_aggragations = false;
             }
-            else {
-                $non_nested_aggragations[] = $parent;
+            elseif (empty($non_nested_aggragations)) {
+                $non_nested_aggragations = $parent;
             }
 
             $parent = $parent['parent'];
         }
 
-        return reset($non_nested_aggragations);
+        return $non_nested_aggragations;
     }
 
     /**
