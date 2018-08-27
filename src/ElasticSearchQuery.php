@@ -180,12 +180,12 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     protected function wrapFilterIfNested($field, $filter)
     {
-        if (!$this->fieldIsNested($field, $nested_field))
+        if (!$this->fieldIsNested($field, $nesting_field))
             return $filter;
 
         $new_filter = [
             "nested" => [
-                'path' => $nested_field,
+                'path' => $nesting_field,
                 'query' => [
                     'filtered' => [
                         "filter" => [
@@ -204,9 +204,9 @@ class ElasticSearchQuery implements \JsonSerializable
         // add two levels of aggregation:
         // + nested aggregation on the nested path
         // + repeat the nested filter in the nested aggregation
-        $this->aggregate('nested_'.$nested_field, [
+        $this->aggregate('nested_'.$nesting_field, [
             'nested' => [
-                'path'=> $nested_field,
+                'path'=> $nesting_field,
             ],
         ]);
 
@@ -974,11 +974,11 @@ class ElasticSearchQuery implements \JsonSerializable
      *
      * @return bool
      */
-    public function fieldIsNested($field, &$nested_field_found=null)
+    public function fieldIsNested($field, &$nesting_field_found=null)
     {
         if ($this->nested_fields) foreach ($this->nested_fields as $nested_field) {
             if (preg_match("#^".preg_quote($nested_field, '#')."#", $field)) {
-                $nested_field_found = $nested_field;
+                $nesting_field_found = $nested_field;
                 return true;
             }
         }
