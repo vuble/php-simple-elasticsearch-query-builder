@@ -632,5 +632,41 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         ], $aggregations);
     }
 
+    /**
+     */
+    public function test_wrapFilterIfNested() {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+
+        $query
+            ->setNestedFields(['nest'])
+            ->where('nest.field', 'exists')
+            ;
+
+        $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
+        var_dump($filters);
+
+        $this->assertEquals([
+            'nested' => [
+                'path'  => 'nest',
+                'query' => [
+                    'filtered'  => [
+                        'filter'    => [
+                            'bool'  => [
+                                'must'  => [
+                                    [
+                                        'exists'  => [
+                                            'field' => 'nest.field'
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ], $filters[0]
+        );
+    }
+
     /**/
 }

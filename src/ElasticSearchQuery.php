@@ -171,7 +171,7 @@ class ElasticSearchQuery implements \JsonSerializable
     }
 
     /**
-     * Add the nested wrapper required to filter on njested fields.
+     * Add the nested wrapper required to filter on nested fields.
      *
      * @param string $field
      * @param array  $filter
@@ -180,7 +180,7 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     protected function wrapFilterIfNested($field, $filter)
     {
-        if (!$this->fieldIsNested($field))
+        if (!$this->fieldIsNested($field, $nested_field))
             return $filter;
 
         $new_filter = [
@@ -970,14 +970,17 @@ class ElasticSearchQuery implements \JsonSerializable
      * Checks if a field is nested based on the list of nested fields
      * 
      * @param  string The field to check 
-     * 
+     * @param  string The variable to store the found nested field in
+     *
      * @return bool
      */
-    public function fieldIsNested($field)
+    public function fieldIsNested($field, &$nested_field_stored=null)
     {
         if ($this->nested_fields) foreach ($this->nested_fields as $nested_field) {
-            if (preg_match("#^".preg_quote($nested_field, '#')."#", $field))
+            if (preg_match("#^".preg_quote($nested_field, '#')."#", $field)) {
+                $nested_field_stored = $nested_field;
                 return true;
+            }
         }
         
         return false;
