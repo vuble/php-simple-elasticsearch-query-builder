@@ -974,11 +974,11 @@ class ElasticSearchQuery implements \JsonSerializable
      *
      * @return bool
      */
-    public function fieldIsNested($field, &$nested_field_stored=null)
+    public function fieldIsNested($field, &$nested_field_found=null)
     {
         if ($this->nested_fields) foreach ($this->nested_fields as $nested_field) {
             if (preg_match("#^".preg_quote($nested_field, '#')."#", $field)) {
-                $nested_field_stored = $nested_field;
+                $nested_field_found = $nested_field;
                 return true;
             }
         }
