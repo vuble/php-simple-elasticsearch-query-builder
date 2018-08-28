@@ -643,7 +643,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ;
 
         $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
-        var_dump($filters);
 
         $this->assertEquals([
             'nested' => [
