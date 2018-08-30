@@ -214,6 +214,15 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 ]
             ]
         ], $must);
+
+        // without aggregations
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $filters = VisibilityViolator::setHiddenProperty($query, 'filters', []);
+
+        $params = $query->getSearchParams();
+        $must   = isset($params['body']['aggregations']);
+
+        $this->assertEquals(false, $must, "Aggregation must not be setted");
     }
 
     /**
@@ -429,8 +438,8 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $es_query = $query->getSearchParams();
         // print_r($es_query);
         // exit;
-        
-        $this->assertEquals( 
+
+        $this->assertEquals(
             [
                 'terms' => [
                     'field'   => 'nest.field_2',
@@ -444,7 +453,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ['aggregations']['group_by_nest.field_1']
             ['aggregations']['group_by_nest.field_2']
         );
-        
+
     }
 
     /**
@@ -558,7 +567,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ->addOperationAggregation( ElasticSearchQuery::COUNT, ['field' => 'field'], false);
         $es_query = $query->getSearchParams();
         
-        $this->assertEquals(null, $es_query['body']['aggregations']);
+        $this->assertEquals(false, isset($es_query['body']['aggregations']));
     }
 
     /**
@@ -571,7 +580,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $json = \json_encode($query);
         
         $this->assertEquals(
-            '{"index":null,"ignore_unavailable":true,"body":{"query":{"constant_score":{"filter":{"bool":{"must":[{"range":{"field":{"lt":"value"}}}]}}}},"aggregations":null,"size":0}}'
+            '{"index":null,"ignore_unavailable":true,"body":{"query":{"constant_score":{"filter":{"bool":{"must":[{"range":{"field":{"lt":"value"}}}]}}}},"size":0}}'
             , $json
         );
     }
