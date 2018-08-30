@@ -804,10 +804,13 @@ class ElasticSearchQuery implements \JsonSerializable
                         ]
                     ],
                 ],
-                'aggregations' => $this->getAggregationsQueryPart(),
                 'size'         => isset($_REQUEST['debug_es']) ? 3 : 0, // return only aggregation results (forget hits)
             ]
         ];
+
+        if ($this->getAggregationsQueryPart() !== null) {
+            $params['body']['aggregations'] = $this->getAggregationsQueryPart();
+        }
 
         $params['body']['query']['constant_score']['filter']['bool']['must']
             = $this->filters;
