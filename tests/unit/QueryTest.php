@@ -450,6 +450,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             $es_query['body']
             ['aggregations']['group_by_field_1']
             ['aggregations']['group_by_field_2']
+            ['aggregations']['nested_nest']
             ['aggregations']['group_by_nest.field_1']
             ['aggregations']['group_by_nest.field_2']
         );
