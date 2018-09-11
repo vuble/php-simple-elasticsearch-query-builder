@@ -637,7 +637,7 @@ class ElasticSearchQuery implements \JsonSerializable
             self::EXTENDED_STATS,
             // self::GEO_BOUNDS,
             // self::GEO_CENTROID,
-            // self::SCRIPTED,
+            self::SCRIPTED,
             self::CUSTOM,
         ];
     }
@@ -651,7 +651,7 @@ class ElasticSearchQuery implements \JsonSerializable
      * This list would be added
      *
      */
-    protected $queued_leaf_perations = [];
+    protected $queued_leaf_operations = [];
 
     protected $operations = [];
 
@@ -660,6 +660,8 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     public function addOperationAggregation($type, array $parameters=[], $as_leaf_of_aggregation_tree=true)
     {
+        $change_aggregation_level = false;
+
         if ( ! in_array($type, $this->supportedQueryTypes())) {
             throw new \ErrorException('Unimplemented type of ES query: '
                 . $type);
@@ -694,6 +696,19 @@ class ElasticSearchQuery implements \JsonSerializable
             $params = [
                 'filters' => $parameters['specific_filters'],
             ];
+        }
+        elseif ($type == self::SCRIPTED) {
+            $es_aggregation_type = 'scripted';
+            $name   = 'group_by_'.$parameters['field'];
+            $params = [
+                'terms' => [
+                    'field'       => $this->renameField( $parameters['field'] ),
+                    'script'      => $parameters['script'],
+                    'min_doc_count' => 1,
+                ],
+            ];
+
+            $change_aggregation_level = true;
         }
         else {
 
@@ -740,10 +755,10 @@ class ElasticSearchQuery implements \JsonSerializable
 
         if ($as_leaf_of_aggregation_tree) {
             // we queue now to call aggregate at the end
-            $this->queued_leaf_perations[$name] = $params;
+            $this->queued_leaf_operations[$name] = $params;
         }
         else {
-            $this->aggregate($name, $params, false);
+            $this->aggregate($name, $params, $change_aggregation_level);
         }
 
         return $this;
@@ -765,7 +780,7 @@ class ElasticSearchQuery implements \JsonSerializable
             $this->aggregate($name, $aggregation_parameters);
         }
         
-        foreach ($this->queued_leaf_perations as $name => $aggregation_parameters) {
+        foreach ($this->queued_leaf_operations as $name => $aggregation_parameters) {
             $this->aggregate($name, $aggregation_parameters, false);
         }
         
