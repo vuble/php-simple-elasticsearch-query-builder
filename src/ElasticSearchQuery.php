@@ -94,12 +94,22 @@ class ElasticSearchQuery implements \JsonSerializable
                 ],
             ];
         }
-        
-        if ($this->fieldIsNested($field)) {
-            // setting an aggregation on non nested field inside another 
+
+        if ($this->fieldIsNested($field, $nesting_field)) {
+            // setting an aggregation on non nested field inside another
             // one concerning nested fields would produce elastic search errors :
-            // Elasticsearch\Common\Exceptions\ServerErrorResponseException: 
+            // Elasticsearch\Common\Exceptions\ServerErrorResponseException:
             // Merging/Reducing the aggregations failed when computing the aggregation [ Name: group_by_deals.win, Type: terms ] because: the field you gave in the aggregation query existed as two different types in two different indices
+
+            // We need to aggregate on the nested path first
+            if (!isset($this->group_by_aggregations_on_nested_fields[$nesting_field])) {
+                $this->group_by_aggregations_on_nested_fields['nested_'.$nesting_field] = [
+                    'nested' => [
+                        'path' => $nesting_field,
+                    ]
+                ];
+            }
+
             if (!isset($this->group_by_aggregations_on_nested_fields[$field]))
                 $this->group_by_aggregations_on_nested_fields['group_by_'.$field_alias] = $aggregation_parameters;
         }
@@ -199,41 +209,6 @@ class ElasticSearchQuery implements \JsonSerializable
                 ],
             ],
         ];
-
-        /**/
-        // add two levels of aggregation:
-        // + nested aggregation on the nested path
-        // + repeat the nested filter in the nested aggregation
-        $this->aggregate('nested_'.$nesting_field, [
-            'nested' => [
-                'path'=> $nesting_field,
-            ],
-        ]);
-
-
-        /**/
-        if (isset($this->current_filters_level['type']) && $this->current_filters_level['type'] == 'or') {
-            // if parent is OR use parent as filter
-            // Debug::dumpJson( array_keys($this->current_filters_level), true);
-            // Debug::dumpJson( array_keys($this->current_filters_level['parent']), true);
-            // Debug::dumpJson( $filter, true);
-            // Debug::dumpJson( $filter, true);
-            $filter = [
-                'bool' => [
-                    'must' => [
-                        'or' => &$this->current_filters_level
-                    ]
-                ]
-            ];
-
-            // Debug::dumpJson( $this->current_filters_level, true);
-        }
-        /**/
-
-        $this->aggregate('filter_'.$field, [
-            'filter' => $filter,
-        ]);
-        /**/
 
         return $new_filter;
     }

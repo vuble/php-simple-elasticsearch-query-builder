@@ -450,10 +450,40 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             $es_query['body']
             ['aggregations']['group_by_field_1']
             ['aggregations']['group_by_field_2']
+            ['aggregations']['nested_nest']
             ['aggregations']['group_by_nest.field_1']
             ['aggregations']['group_by_nest.field_2']
         );
 
+    }
+
+    /**
+     */
+    public function test_group_by_nested_fields_filtered() {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+
+        $query
+            ->setNestedFields(['nest'])
+            ->where('nest.field', 'exists')
+            ->groupBy('nest.field')
+            ->groupBy('field_1')
+            ;
+
+        $es_query = $query->getSearchParams();
+
+        $this->assertEquals(
+            [
+                'terms' => [
+                    'field'   => 'nest.field',
+                    'size'    => 0,
+                    'missing' => -1,
+                ]
+            ],
+            $es_query['body']
+            ['aggregations']['group_by_field_1']
+            ['aggregations']['nested_nest']
+            ['aggregations']['group_by_nest.field']
+        );
     }
 
     /**
