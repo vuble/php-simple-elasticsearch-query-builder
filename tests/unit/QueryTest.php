@@ -563,11 +563,15 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 'field'            => 'field-for-custom',
                 'specific_filters' => 'custom_filters',
             ])
+            ->addOperationAggregation( ElasticSearchQuery::SCRIPT, [
+                'field'  => 'field-filled-by-script',
+                'script' => 'script to fill the field',
+            ])
             ;
 
             
         $es_query = $query->getSearchParams();
-        // print_r($es_query);
+        // var_export($es_query);
         
         $this->assertEquals([
             'sum' => ['field' => 'field']
@@ -586,11 +590,15 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['histogram_field-for-histogram_2']);
 
         $this->assertEquals([
-            'filters' => 'custom_filters'
-        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']
-                                            ['calculation_custom_field-for-custom_c5438a396e5e1b0c693a325c0403c4f3']
+                'terms' => [
+                    'field'  => 'field-filled-by-script',
+                    'script' => 'script to fill the field',
+                    'size'   => 0,
+                ],
+            ],
+            $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['script_field-filled-by-script']
         );
-        
+
         // COUNT do not require aggregation
         $query = new ElasticSearchQuery;
         $query

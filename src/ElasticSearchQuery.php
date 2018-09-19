@@ -153,7 +153,8 @@ class ElasticSearchQuery implements \JsonSerializable
             // No limit of data to aggregate on
             $aggregation_parameters[$aggregation_type]['size'] = 0;
             // null not supported for "missing" option
-            $aggregation_parameters[$aggregation_type]['missing'] = self::MISSING_AGGREGATION_FIELD;
+            if (empty($aggregation_parameters[$aggregation_type]['script']))
+                $aggregation_parameters[$aggregation_type]['missing'] = self::MISSING_AGGREGATION_FIELD;
         }
 
         if (!isset($this->current_aggregation['aggregations']))
@@ -691,13 +692,26 @@ class ElasticSearchQuery implements \JsonSerializable
         }
         elseif ($type == self::SCRIPT) {
             $es_aggregation_type = 'script';
-            $name   = 'group_by_'.$parameters['field'];
+            $name = 'script_'.$parameters['field'];
+            
+            $parameters['field'] = $this->renameField( $parameters['field'] );
+            
+            if (empty($parameters['field'])) {
+                throw new \InvalidArgumentException(
+                    "Missing 'field' in parameters for a SCRIPT operation aggregation: \n"
+                    .var_export($parameters, true)
+                );
+            }
+            
+            if (empty($parameters['script'])) {
+                throw new \InvalidArgumentException(
+                    "Missing 'script' in parameters for a SCRIPT operation aggregation: \n"
+                    .var_export($parameters, true)
+                );
+            }
+            
             $params = [
-                'terms' => [
-                    'field'       => $this->renameField( $parameters['field'] ),
-                    'script'      => $parameters['script'],
-                    'min_doc_count' => 1,
-                ],
+                'terms' => $parameters,
             ];
 
             $change_aggregation_level = true;
