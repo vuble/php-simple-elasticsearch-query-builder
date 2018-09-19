@@ -206,6 +206,72 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     /**
      * @unit
      */
+    public function test_getAsSqlResult_NestedAggregations_missing()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                'hits' => [
+                    'total' => 454,
+                    'max_score' => 0,
+                    'hits' => [],
+                ],
+                'aggregations' => [
+                    'group_by_A_id' => [
+                        'doc_count_error_upper_bound' => 0,
+                        'sum_other_doc_count' => 0,
+                        'buckets' => [
+                            [
+                                'key' => 101,
+                                'doc_count' => 446,
+                                'nested_D' => [
+                                    'doc_count' => 0,   // doc_count = 0 due to empty nested
+                                    'group_by_D.id' => [
+                                        'doc_count_error_upper_bound' => 0,
+                                        'sum_other_doc_count' => 0,
+                                        'buckets' => [],
+                                    ],
+                                ],
+                            ],
+                            [
+                                'key' => 100,
+                                'doc_count' => 8,
+                                'nested_D' => [
+                                    'doc_count' => 0,   // doc_count = 0 due to empty nested
+                                    'group_by_D.id' => [
+                                        'doc_count_error_upper_bound' => 0,
+                                        'sum_other_doc_count' => 0,
+                                        'buckets' => [],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            [
+                'A_id:101' => [
+                    'A_id' => 101,
+                    'D.id' => NULL,
+                    'total' => 446,
+                ],
+                'A_id:100' => [
+                    'A_id' => 100,
+                    'D.id' => NULL,
+                    'total' => 8,
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
+     * @unit
+     */
     public function test_getAsSqlResult_RootNestedAggregations()
     {
         $result = (new ElasticSearchResult(

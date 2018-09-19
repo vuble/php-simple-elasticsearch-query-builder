@@ -65,7 +65,7 @@
  */
 namespace JClaveau\ElasticSearch;
 
-class ElasticSearchResult implements \JsonSerializable 
+class ElasticSearchResult implements \JsonSerializable
 {
     protected $es_result;
     /** @var COUNT Name of the column containing the number of values in the group */
@@ -168,7 +168,12 @@ class ElasticSearchResult implements \JsonSerializable
             }
         }
 
-        if ($last_nonnested_parent_doc_count && $last_nonnested_parent_doc_count < $aggregation_node['doc_count']) {
+        if (    $last_nonnested_parent_doc_count
+            && (
+                    !$aggregation_node['doc_count']
+                ||  $last_nonnested_parent_doc_count < $aggregation_node['doc_count']
+            )
+        ) {
             $aggregation_node['doc_count'] = $last_nonnested_parent_doc_count;
         }
 
@@ -275,6 +280,7 @@ class ElasticSearchResult implements \JsonSerializable
                 $aggregation_node,
                 $last_nonnested_parent_doc_count
             );
+
             $out = array_merge_recursive($out, $sub_rows);
         }
         elseif ($operation_key = $this->findCalculationKey($aggregation_node)) {
@@ -555,6 +561,6 @@ class ElasticSearchResult implements \JsonSerializable
     public function jsonSerialize() {
         return $this->getResults();
     }
-    
+
     /**/
 }
