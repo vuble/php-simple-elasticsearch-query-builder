@@ -38,7 +38,7 @@ class ElasticSearchQuery implements \JsonSerializable
     const GEO_BOUNDS        = 'geo_bounds';
     const GEO_CENTROID      = 'geo_centroid';
     const VALUE_COUNT       = 'value_count';
-    const SCRIPTED          = 'scripted';
+    const SCRIPT            = 'script';
     const HISTOGRAM         = 'histogram';
     const CUSTOM            = 'custom';
 
@@ -697,8 +697,8 @@ class ElasticSearchQuery implements \JsonSerializable
                 'filters' => $parameters['specific_filters'],
             ];
         }
-        elseif ($type == self::SCRIPTED) {
-            $es_aggregation_type = 'scripted';
+        elseif ($type == self::SCRIPT) {
+            $es_aggregation_type = 'script';
             $name   = 'group_by_'.$parameters['field'];
             $params = [
                 'terms' => [
