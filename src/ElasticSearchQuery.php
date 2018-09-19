@@ -629,7 +629,7 @@ class ElasticSearchQuery implements \JsonSerializable
             self::EXTENDED_STATS,
             // self::GEO_BOUNDS,
             // self::GEO_CENTROID,
-            self::SCRIPTED,
+            self::SCRIPT,
             self::CUSTOM,
         ];
     }
