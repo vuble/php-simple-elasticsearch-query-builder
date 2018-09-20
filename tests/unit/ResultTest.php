@@ -431,6 +431,171 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     */
+    public function test_getAsSqlResult_script_aggregation()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                "aggregations" => [
+                    "script_script-result" => [
+                        "doc_count_error_upper_bound" => 0,
+                        "sum_other_doc_count" => 0,
+                        "buckets" => [
+                            [
+                                "key" => 5,
+                                "doc_count" => 64715
+                            ],
+                            [
+                                "key" => 4,
+                                "doc_count" => 27131
+                            ],
+                            [
+                                "key" => 8,
+                                "doc_count" => 22032
+                            ],
+                            [
+                                "key" => 6,
+                                "doc_count" => 8699
+                            ],
+                            [
+                                "key" => 0,
+                                "doc_count" => 6935
+                            ],
+                            [
+                                "key" => 7,
+                                "doc_count" => 4462
+                            ],
+                            [
+                                "key" => 3,
+                                "doc_count" => 3053
+                            ],
+                            [
+                                "key" => 9,
+                                "doc_count" => 1296
+                            ],
+                            [
+                                "key" => 15,
+                                "doc_count" => 963
+                            ],
+                            [
+                                "key" => 10,
+                                "doc_count" => 634
+                            ],
+                            [
+                                "key" => 12,
+                                "doc_count" => 466
+                            ],
+                            [
+                                "key" => 11,
+                                "doc_count" => 153
+                            ],
+                            [
+                                "key" => 2,
+                                "doc_count" => 152
+                            ],
+                            [
+                                "key" => 16,
+                                "doc_count" => 86
+                            ],
+                            [
+                                "key" => 13,
+                                "doc_count" => 69
+                            ],
+                            [
+                                "key" => 14,
+                                "doc_count" => 38
+                            ],
+                            [
+                                "key" => 1,
+                                "doc_count" => 12
+                            ],
+                            [
+                                "key" => 17,
+                                "doc_count" => 5
+                            ],
+                            [
+                                "key" => 20,
+                                "doc_count" => 4
+                            ],
+                            [
+                                "key" => 18,
+                                "doc_count" => 3
+                            ],
+                            [
+                                "key" => 21,
+                                "doc_count" => 3
+                            ],
+                            [
+                                "key" => 26,
+                                "doc_count" => 2
+                            ],
+                            [
+                                "key" => 28,
+                                "doc_count" => 2
+                            ],
+                            [
+                                "key" => 32,
+                                "doc_count" => 2
+                            ],
+                            [
+                                "key" => 19,
+                                "doc_count" => 1
+                            ],
+                            [
+                                "key" => 27,
+                                "doc_count" => 1
+                            ],
+                            [
+                                "key" => 45,
+                                "doc_count" => 1
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            [
+                0 => [
+                    'script_script-result' => [
+                        0 => 5,
+                        1 => 4,
+                        2 => 8,
+                        3 => 6,
+                        4 => 0,
+                        5 => 7,
+                        6 => 3,
+                        7 => 9,
+                        8 => 15,
+                        9 => 10,
+                        10 => 12,
+                        11 => 11,
+                        12 => 2,
+                        13 => 16,
+                        14 => 13,
+                        15 => 14,
+                        16 => 1,
+                        17 => 17,
+                        18 => 20,
+                        19 => 18,
+                        20 => 21,
+                        21 => 26,
+                        22 => 28,
+                        23 => 32,
+                        24 => 19,
+                        25 => 27,
+                        26 => 45,
+                    ],
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
      * @unit
      */
     public function test_getHits()

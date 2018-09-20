@@ -214,6 +214,11 @@ class ElasticSearchResult implements \JsonSerializable
                     $previous_operations_values[ self::COUNT ] = array_sum($operation_key['value']);
                 }
             }
+            elseif ($operation_key = $this->findScriptKey($aggregation_key, $aggregation_entry)) {
+                $previous_operations_values[
+                    $operation_key['type'] . '_' . $operation_key['field']
+                ] = array_column($aggregation_entry['buckets'], 'key');
+            }
         }
 
         // print_r([
@@ -342,16 +347,25 @@ class ElasticSearchResult implements \JsonSerializable
                 $previous_group_by_values
             );
 
-            $out[ $row_id ] = array_merge_recursive(
-                $previous_group_by_values,
-                $previous_operations_values
-            );
+            if ($row_id) {
+                $out[ $row_id ] = array_merge_recursive(
+                    $previous_group_by_values,
+                    $previous_operations_values
+                );
+            }
+            else {
+                $out[] = array_merge_recursive(
+                    $previous_group_by_values,
+                    $previous_operations_values
+                );
+            }
         }
         else {
             foreach ($new_sub_rows as $new_row_id => $new_row) {
                 $out[ $new_row_id ] = $new_row;
             }
         }
+
 
         return $out;
     }
@@ -429,19 +443,36 @@ class ElasticSearchResult implements \JsonSerializable
      */
     protected function findGroupByKey($key, $aggregation_entry)
     {
-        // foreach ($aggregation_bucket as $key => $value) {
+        if (preg_match('/^group_by_(.*)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'field' => $result[1],
+                'type'  => 'group_by',
+            ];
+        }
 
-            // if (!is_array($aggregation_entry))
-                // continue;
+        return null;
+    }
 
-            if (preg_match('/^group_by_(.*)$/', $key, $result)) {
-                return [
-                    'key'   => $key,
-                    'field' => $result[1],
-                    'type'  => 'group_by',
-                ];
-            }
-        // }
+    /**
+     * Checks if an aggregation is a script one.
+     *
+     * @param  array $aggregation_bucket
+     * @return array [
+     *     'key'   => $key,
+     *     'field' => $result[1],
+     *     'type'  => 'script',
+     * ]
+     */
+    protected function findScriptKey($key, $aggregation_entry)
+    {
+        if (preg_match('/^script_(.*)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'field' => $result[1],
+                'type'  => 'script',
+            ];
+        }
 
         return null;
     }
@@ -452,18 +483,13 @@ class ElasticSearchResult implements \JsonSerializable
     // protected function findFilterKey(array $aggregation_bucket)
     protected function findFilterKey($key, $aggregation_entry)
     {
-        // foreach ($aggregation_bucket as $key => $value) {
-            // if (!is_array($value))
-                // continue;
-
-            if (preg_match('/^filter_(.*)$/', $key, $result)) {
-                return [
-                    'key'   => $key,
-                    'type'  => 'filter',
-                    'field' => $result[1],
-                ];
-            }
-        // }
+        if (preg_match('/^filter_(.*)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'type'  => 'filter',
+                'field' => $result[1],
+            ];
+        }
 
         return null;
     }
@@ -471,21 +497,15 @@ class ElasticSearchResult implements \JsonSerializable
     /**
      * Checks if an aggregation is a group_by one.
      */
-    // protected function findNestedKey(array $aggregation_bucket)
     protected function findNestedKey($key, $aggregation_entry)
     {
-        // foreach ($aggregation_bucket as $key => $value) {
-            // if (!is_array($value))
-                // continue;
-
-            if (preg_match('/^nested_(.*)$/', $key, $result)) {
-                return [
-                    'key'   => $key,
-                    'type'  => 'nested',
-                    'field' => $result[1],
-                ];
-            }
-        // }
+        if (preg_match('/^nested_(.*)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'type'  => 'nested',
+                'field' => $result[1],
+            ];
+        }
 
         return null;
     }
@@ -496,29 +516,23 @@ class ElasticSearchResult implements \JsonSerializable
     // protected function findCalculationKey(array $aggregation_bucket)
     protected function findCalculationKey($key, $aggregation_entry)
     {
-        // foreach ($aggregation_bucket as $key => $value) {
+        if (preg_match('/^calculation_(extended_stats|[^_]+)_(.+)$/', $key, $result)) {
 
-            // if (!is_array($value))
-                // continue;
-
-            if (preg_match('/^calculation_(extended_stats|[^_]+)_(.+)$/', $key, $result)) {
-
-                if (in_array($result[1], ['extended_stats', 'custom'])) {
-                    $value = $aggregation_entry;
-                } elseif (isset($aggregation_entry['value'])) {
-                    $value = $aggregation_entry['value'];
-                } else {
-                    $value = $aggregation_entry['values'];
-                }
-
-                return [
-                    'key'   => $key,
-                    'type'  => $result[1],
-                    'field' => $result[2],
-                    'value' => $value,
-                ];
+            if (in_array($result[1], ['extended_stats', 'custom'])) {
+                $value = $aggregation_entry;
+            } elseif (isset($aggregation_entry['value'])) {
+                $value = $aggregation_entry['value'];
+            } else {
+                $value = $aggregation_entry['values'];
             }
-        // }
+
+            return [
+                'key'   => $key,
+                'type'  => $result[1],
+                'field' => $result[2],
+                'value' => $value,
+            ];
+        }
 
         return null;
     }
@@ -527,26 +541,20 @@ class ElasticSearchResult implements \JsonSerializable
      */
     protected function findHistogramKey($key, $aggregation_entry)
     {
-        // foreach ($aggregation_bucket as $key => $value) {
+        if (preg_match('/^histogram_(.+)_([^_]+)$/', $key, $result)) {
 
-            // if (!is_array($value))
-                // continue;
-
-            if (preg_match('/^histogram_(.+)_([^_]+)$/', $key, $result)) {
-
-                $values = [];
-                foreach ($aggregation_entry['buckets'] as $bucket) {
-                    $values[$bucket['key']] = $bucket['doc_count'];
-                }
-
-                return [
-                    'key'   => $key,
-                    'field' => $result[1],
-                    'type'  => 'histogram_'.$result[2],
-                    'value' => $values,
-                ];
+            $values = [];
+            foreach ($aggregation_entry['buckets'] as $bucket) {
+                $values[$bucket['key']] = $bucket['doc_count'];
             }
-        // }
+
+            return [
+                'key'   => $key,
+                'field' => $result[1],
+                'type'  => 'histogram_'.$result[2],
+                'value' => $values,
+            ];
+        }
 
         return null;
     }
