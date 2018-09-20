@@ -610,6 +610,41 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_addOperationAggregation_after_grouping_on_nested_field()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query
+            ->setNestedFields(['nested_field'])
+            ->groupBy('nested_field')
+            ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_for_avg'])
+            ;
+
+
+        $es_query = $query->getSearchParams();
+        // var_export($es_query);
+
+        // normal leaf average operation
+        $this->assertEquals([
+                'avg' => ['field' => 'field_for_avg']
+            ],
+            $es_query['body']
+            ['aggregations']['nested_nested_field']
+            ['aggregations']['group_by_nested_field']
+            ['aggregations']['calculation_avg_field_for_avg']
+        );
+
+        // same level as nested average operation in case of empty nested field
+        $this->assertEquals([
+                'avg' => ['field' => 'field_for_avg']
+            ],
+            $es_query['body']
+            ['aggregations']['calculation_avg_field_for_avg']
+        );
+    }
+
+    /**
+     */
     public function test_json_encode()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
@@ -674,41 +709,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 ]
             ]
         ], $filters[0]
-        );
-    }
-
-    /**
-     */
-    public function test_addOperationAggregation_after_grouping_on_nested_field()
-    {
-        $query = new ElasticSearchQuery;
-
-        $query
-            ->setNestedFields(['nested_field'])
-            ->groupBy('nested_field')
-            ->addOperationAggregation( ElasticSearchQuery::AVERAGE, ['field' => 'field_for_avg'])
-            ;
-
-
-        $es_query = $query->getSearchParams();
-        // var_export($es_query);
-
-        // normal leaf average operation
-        $this->assertEquals([
-                'avg' => ['field' => 'field_for_avg']
-            ],
-            $es_query['body']
-            ['aggregations']['nested_nested_field']
-            ['aggregations']['group_by_nested_field']
-            ['aggregations']['calculation_avg_field_for_avg']
-        );
-
-        // same level as nested average operation in case of empty nested field
-        $this->assertEquals([
-                'avg' => ['field' => 'field_for_avg']
-            ],
-            $es_query['body']
-            ['aggregations']['calculation_avg_field_for_avg']
         );
     }
 
