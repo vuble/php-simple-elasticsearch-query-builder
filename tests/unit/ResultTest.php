@@ -22,9 +22,8 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @unit
      */
-    public function test_getAsSqlResult()
+    public function test_getAsSqlResult_basic()
     {
         $result = (new ElasticSearchResult(
             [
@@ -91,7 +90,6 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         ;
 
         $this->assertEquals(
-            $result,
             [
                 'id:529-aid:1021374-type:impression-cid:0' => [
                     'id' => 529,
@@ -107,19 +105,20 @@ class ResultTest extends \PHPUnit_Framework_TestCase
                     'cid' => '1234',
                     'total' => 13032,
                 ],
-            ]
+            ],
+            $result
         );
     }
 
     /**
      * @unit
      */
-    public function test_getAsSqlResult_NestedAggregations()
+    public function test_getAsSqlResult_NestedAggregations_basic()
     {
         $result = (new ElasticSearchResult(
             [
                 'hits' => [
-                    'total' => 12348,
+                    'total' => 4,
                     'max_score' => 1,
                     'hits' => []
                 ],
@@ -128,33 +127,33 @@ class ResultTest extends \PHPUnit_Framework_TestCase
                         'buckets' => [
                             0 => [
                                 'key' => 'request',
-                                'doc_count' => 12349,
+                                'doc_count' => 4,
                                 'group_by_id' => [
                                     'buckets' => [
                                         0 => [
                                             'key' => 529,
-                                            'doc_count' => 12347,
+                                            'doc_count' => 4,
                                             'nested_deals' => [
-                                                'doc_count' => 47288,
+                                                'doc_count' => 10,
                                                 'filter_deal_id' => [
-                                                    'doc_count' => 47288,
+                                                    'doc_count' => 10,
                                                     'group_by_deals.deal_id' => [
                                                         'buckets' => [
                                                             0 => [
                                                                 'key' => 'DEAL1',
-                                                                'doc_count' => 12349,
+                                                                'doc_count' => 1,
                                                             ],
                                                             1 => [
                                                                 'key' => 'DEAL2',
-                                                                'doc_count' => 12346,
+                                                                'doc_count' => 2,
                                                             ],
                                                             2 => [
                                                                 'key' => 'DEAL3',
-                                                                'doc_count' => 12347,
+                                                                'doc_count' => 3,
                                                             ],
                                                             3 => [
                                                                 'key' => 'DEAL4',
-                                                                'doc_count' => 9974,
+                                                                'doc_count' => 4,
                                                             ],
                                                         ],
                                                     ],
@@ -173,40 +172,40 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         ;
 
         $this->assertEquals(
-            $result,
             [
                 'type:request-id:529-deals.deal_id:DEAL1' => [
                     'type' => 'request',
                     'id' => 529,
                     'deals.deal_id' => 'DEAL1',
-                    'total' => 12347,
+                    'total' => 1,
                 ],
                 'type:request-id:529-deals.deal_id:DEAL2' => [
                     'type' => 'request',
                     'id' => 529,
                     'deals.deal_id' => 'DEAL2',
-                    'total' => 12346,
+                    'total' => 2,
                 ],
                 'type:request-id:529-deals.deal_id:DEAL3' => [
                     'type' => 'request',
                     'id' => 529,
                     'deals.deal_id' => 'DEAL3',
-                    'total' => 12347,
+                    'total' => 3,
                 ],
                 'type:request-id:529-deals.deal_id:DEAL4' => [
                     'type' => 'request',
                     'id' => 529,
                     'deals.deal_id' => 'DEAL4',
-                    'total' => 9974,
+                    'total' => 4,
                 ],
-            ]
+            ],
+            $result
         );
     }
 
     /**
      * @unit
      */
-    public function test_getAsSqlResult_NestedAggregations_missing()
+    public function test_getAsSqlResult_NestedAggregations_missing_simple()
     {
         $result = (new ElasticSearchResult(
             [
@@ -254,12 +253,12 @@ class ResultTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(
             [
-                'A_id:101' => [
+                'A_id:101-D.id:' => [
                     'A_id' => 101,
                     'D.id' => NULL,
                     'total' => 446,
                 ],
-                'A_id:100' => [
+                'A_id:100-D.id:' => [
                     'A_id' => 100,
                     'D.id' => NULL,
                     'total' => 8,
@@ -270,7 +269,101 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @unit
+     */
+    public function test_getAsSqlResult_NestedAggregations_missing_with_operation()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                "hits" => [
+                    "total" => 454,
+                    "max_score" => 0,
+                    "hits" => []
+                ],
+                "aggregations" => [
+                    "group_by_A_id" => [
+                        "doc_count_error_upper_bound" => 0,
+                        "sum_other_doc_count" => 0,
+                        "buckets" => [
+                            [
+                                "key" => 101,
+                                "doc_count" => 446,
+                                "group_by_E" => [
+                                    "doc_count_error_upper_bound" => 0,
+                                    "sum_other_doc_count" => 0,
+                                    "buckets" => [
+                                        [
+                                            "key" => "my-event",
+                                            "doc_count" => 446,
+                                            "calculation_avg_cpm" => [
+                                                "value" => 6.9845391990103
+                                            ],
+                                            "nested_Ds" => [
+                                                "doc_count" => 0,
+                                                "group_by_Ds.D_id" => [
+                                                    "doc_count_error_upper_bound" => 0,
+                                                    "sum_other_doc_count" => 0,
+                                                    "buckets" => []
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            [
+                                "key" => 100,
+                                "doc_count" => 8,
+                                "group_by_E" => [
+                                    "doc_count_error_upper_bound" => 0,
+                                    "sum_other_doc_count" => 0,
+                                    "buckets" => [
+                                        [
+                                            "key" => "my-event",
+                                            "doc_count" => 8,
+                                            "calculation_avg_cpm" => [
+                                                "value" => 9.2425
+                                            ],
+                                            "nested_Ds" => [
+                                                "doc_count" => 0,
+                                                "group_by_Ds.D_id" => [
+                                                    "doc_count_error_upper_bound" => 0,
+                                                    "sum_other_doc_count" => 0,
+                                                    "buckets" => []
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            [
+                'A_id:101-E:my-event-Ds.D_id:' => [
+                    'A_id'    => 101,
+                    'E'       => 'my-event',
+                    'avg_cpm' => 6.9845391990103,
+                    'total'   => 446,
+                    'Ds.D_id' => NULL,
+                ],
+                'A_id:100-E:my-event-Ds.D_id:' => [
+                    'A_id'    => 100,
+                    'E'       => 'my-event',
+                    'avg_cpm' => 9.2425,
+                    'total'   => 8,
+                    'Ds.D_id' => NULL,
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
      */
     public function test_getAsSqlResult_RootNestedAggregations()
     {
@@ -315,11 +408,10 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         ;
 
         $this->assertEquals(
-            $result,
             [
                 'deals.deal_id:DEAL1' => [
                     'deals.deal_id' => 'DEAL1',
-                    'total' => 12348,
+                    'total' => 12349,
                 ],
                 'deals.deal_id:DEAL2' => [
                     'deals.deal_id' => 'DEAL2',
@@ -333,7 +425,8 @@ class ResultTest extends \PHPUnit_Framework_TestCase
                     'deals.deal_id' => 'DEAL4',
                     'total' => 9974,
                 ],
-            ]
+            ],
+            $result
         );
     }
 

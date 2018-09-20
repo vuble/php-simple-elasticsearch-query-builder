@@ -19,7 +19,7 @@ class ElasticSearchResultProfileTest extends \AbstractTest
         ;
 
         // var_dump($this->getExecutionTime());
-        $this->assertExecutionTimeBelow(0.2);
+        $this->assertExecutionTimeBelow(0.2 * 5);
     }
 
     /**

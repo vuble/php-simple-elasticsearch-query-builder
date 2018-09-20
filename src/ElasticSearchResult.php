@@ -111,7 +111,8 @@ class ElasticSearchResult implements \JsonSerializable
      */
     protected function simplifyAggregations(
         array $aggregation_node,
-        array $previous_aggregation_values=[],
+        array $previous_group_by_values=[],
+        array $previous_operations_values=[],
         array $parent=[],
         $last_nonnested_parent_doc_count=0
     ) {
@@ -168,169 +169,188 @@ class ElasticSearchResult implements \JsonSerializable
             }
         }
 
-        if (    $last_nonnested_parent_doc_count
-            && (
-                    !$aggregation_node['doc_count']
-                ||  $last_nonnested_parent_doc_count < $aggregation_node['doc_count']
-            )
-        ) {
-            $aggregation_node['doc_count'] = $last_nonnested_parent_doc_count;
+        if ($last_nonnested_parent_doc_count) {
+            if ( ! $aggregation_node['doc_count']) {
+                // A group by a nested field which is empty would produce a
+                // doc_count being 0 even if some results exist
+                $aggregation_node['doc_count'] = $last_nonnested_parent_doc_count;
+            }
+
+            if ( ! $last_nonnested_parent_doc_count < $aggregation_node['doc_count']) {
+                // doc_counts of nested aggregations can be higher than the
+                // full doc count of the filter due to group by nested fields
+                $aggregation_node['doc_count'] = $last_nonnested_parent_doc_count;
+            }
         }
 
-        $out = [];
-        if ($group_by_key = $this->findGroupByKey($aggregation_node)) {
+        foreach ($aggregation_node as $aggregation_key => $aggregation_entry) {
+            // look for operations
+            if ($operation_key = $this->findCalculationKey($aggregation_key, $aggregation_entry)) {
+                // extract values from operation aggregations
+                $previous_operations_values[
+                    $operation_key['type'] . '_' . $operation_key['field']
+                ] = $operation_key['value'];
 
-            // This case occures when a group aggregation is made on a
-            // field that doesn't exist in ES.
-            // TODO check if it still occures with the "missing" option enabled
-            // TODO check if this behavior could be applied to all buckets
-            //      aggregations or only the grouping ones.
-            if (  !empty($aggregation_node['doc_count'])
-                && empty($aggregation_node[$group_by_key['key']]['buckets'])) {
-
-                $row_id = $this->doubleImplodeOfGroupedByValues(
-                    $previous_aggregation_values
-                );
-
-                // We add a fake entry matching the group field and fill
-                // it with null.
-                // TODO : handle the case with multiple aggregations in
-                //        this case.
-                $previous_aggregation_values[$group_by_key['field']] = null;
-                $previous_aggregation_values[self::COUNT] = $aggregation_node['doc_count'];
-
-                $out[ $row_id ] = $previous_aggregation_values;
-            }
-            else {
-                foreach ($aggregation_node[ $group_by_key['key'] ]['buckets'] as $i => $bucket) {
-
-                    $key = $bucket[
-                        isset($bucket['key_as_string']) ? 'key_as_string' : 'key'
-                    ];
-
-                    $field = $group_by_key['field'];
-
-                    if ($key == ElasticSearchQuery::MISSING_AGGREGATION_FIELD)
-                        $key = null;
-
-                    $previous_aggregation_values[ $field ] = $key;
-                    $aggregation_node['aggregation_type']  = $group_by_key['type'];
-
-                    // not the last aggregation
-                    $sub_rows = $this->simplifyAggregations(
-                        $bucket,
-                        $previous_aggregation_values,
-                        $aggregation_node,
-                        $last_nonnested_parent_doc_count
-                    );
-                    $out = array_merge_recursive($out, $sub_rows);
+                if (isset($aggregation_node['doc_count'])) {
+                    $previous_operations_values[ self::COUNT ] = $aggregation_node['doc_count'];
+                }
+                else {
+                    // When an aggregagtion (sum, avg) is not nested into an
+                    // other one, we need to use the global count stored in
+                    // the hits entry of the result.
+                    $previous_operations_values[ self::COUNT ] = $this->es_result['hits']['total'];
                 }
             }
+            elseif ($operation_key = $this->findHistogramKey($aggregation_key, $aggregation_entry)) {
+                // extract values from operation aggregations
+                $previous_operations_values[
+                    $operation_key['type'].'_'.$operation_key['field']
+                ] = $operation_key['value'];
 
+                if (isset($aggregation_node['doc_count'])) {
+                    $previous_operations_values[ self::COUNT ] = $aggregation_node['doc_count'];
+                }
+                else {
+                    $previous_operations_values[ self::COUNT ] = array_sum($operation_key['value']);
+                }
+            }
         }
-        elseif (
-                ($skipable_aggregation_infos = $this->findNestedKey($aggregation_node))
-            ||  ($skipable_aggregation_infos = $this->findFilterKey($aggregation_node))
-        ) {
-            // Nested aggregations and filter aggregations have no impact
-            // on grouping process as in the following example:
-            // "aggregations": {
-            //     "group_by_event": {
-            //         "doc_count_error_upper_bound": 0,
-            //         "sum_other_doc_count": 0,
-            //         "buckets": [
-            //             {
-            //                 "key": "rtb_bid",
-            //                 "doc_count": 16,
-            //                 "group_by_publisher_id": {
-            //                     "doc_count_error_upper_bound": 0,
-            //                     "sum_other_doc_count": 0,
-            //                     "buckets": [
-            //                         {
-            //                             "key": 529,
-            //                             "doc_count": 16,
-            //                             "nested_metadata.deals.deal_id": {
-            //                                 "doc_count": 16,
-            //                                 "filter_metadata.deals.deal_id": {
-            //                                     "doc_count": 16,
-            //                                     "group_by_deals.deal_id": {
-            //                                         "doc_count_error_upper_bound": 0,
-            //                                         "sum_other_doc_count": 0,
-            //                                         "buckets": [
-            //                                             {
-            //                                                 "key": "MDB-18-03-19-37569",
-            //                                                 "doc_count": 16
-            //                                             }
-            //                                         ]
-            //                                     }
-            //                                 }
-            //                             }
-            //                         }
-            //                     ]
-            //                 }
-            //             }
-            //         ]
-            //     }
-            // }
-            $aggregation_node['aggregation_type'] = $skipable_aggregation_infos['type'];
 
-            $sub_rows = $this->simplifyAggregations(
-                $aggregation_node[ $skipable_aggregation_infos['key'] ],
-                $previous_aggregation_values,
-                $aggregation_node,
-                $last_nonnested_parent_doc_count
-            );
+        // print_r([
+            // 'group_by' => $previous_group_by_values,
+            // 'operations' => $previous_operations_values,
+        // ]);
 
-            $out = array_merge_recursive($out, $sub_rows);
+        // Look for branch aggregations (grouping / terms / ...)
+        $non_leaf_sub_aggregations_count = 0;
+        $new_sub_rows = [];
+        foreach ($aggregation_node as $aggregation_key => $aggregation_entry) {
+
+            if ($group_by_key = $this->findGroupByKey($aggregation_key, $aggregation_entry)) {
+
+                if ($non_leaf_sub_aggregations_count != 0) {
+                    throw new \LogicException(
+                         "Support of multiple non leaf aggregations at the same "
+                        ."level not implemented\n"
+                        .var_export($aggregation_node, true)
+                    );
+                }
+                $non_leaf_sub_aggregations_count++;
+
+                // This case occures when a group aggregation is made on a
+                // field that doesn't exist in ES.
+                // TODO check if it still occures with the "missing" option enabled
+                // TODO check if this behavior could be applied to all buckets
+                //      aggregations or only the grouping ones.
+                if (  !empty($aggregation_node['doc_count'])
+                    && empty($aggregation_entry['buckets'])) {
+
+                    // We add a fake entry matching the group field and fill
+                    // it with null.
+                    // TODO : handle the case with multiple aggregations in
+                    //        this case.
+                    $previous_group_by_values[ $group_by_key['field'] ] = null;
+                    $previous_operations_values[ self::COUNT ] = $aggregation_node['doc_count'];
+
+                    $row_id = $this->doubleImplodeOfGroupedByValues(
+                        // $previous_aggregation_values
+                        $previous_group_by_values
+                    );
+
+                    $new_sub_rows[ $row_id ] = array_merge_recursive(
+                        $previous_group_by_values,
+                        $previous_operations_values
+                    );
+
+                    // print_r([
+                        // 'group_by' => $previous_group_by_values,
+                        // 'operations' => $previous_operations_values,
+                    // ]);
+                    // exit;
+                }
+                else {
+
+                    foreach ($aggregation_entry['buckets'] as $i => $bucket) {
+                        $key = $bucket[
+                            isset($bucket['key_as_string']) ? 'key_as_string' : 'key'
+                        ];
+
+                        $field = $group_by_key['field'];
+
+                        if ($key == ElasticSearchQuery::MISSING_AGGREGATION_FIELD)
+                            $key = null;
+
+                        $previous_group_by_values[ $field ] = $key;
+                        $previous_operations_values[ self::COUNT ] = $bucket['doc_count'];
+
+                        $aggregation_node['aggregation_type']  = $group_by_key['type'];
+
+                        // not the last aggregation
+                        $sub_rows = $this->simplifyAggregations(
+                            $bucket,
+                            $previous_group_by_values,
+                            $previous_operations_values,
+                            $aggregation_node,
+                            $last_nonnested_parent_doc_count
+                        );
+
+                        foreach ($sub_rows as $sub_row_id => $sub_row) {
+                            $new_sub_rows[ $sub_row_id ] = $sub_row;
+                        }
+                    }
+
+                }
+
+            }
+            elseif (
+                    ($skipable_aggregation_infos = $this->findNestedKey($aggregation_key, $aggregation_entry))
+                ||  ($skipable_aggregation_infos = $this->findFilterKey($aggregation_key, $aggregation_entry))
+            ) {
+
+                if ($non_leaf_sub_aggregations_count != 0) {
+                    throw new \LogicException(
+                         "Support of multiple non leaf aggregations at the same "
+                        ."level not implemented\n"
+                        .var_export($aggregation_node, true)
+                    );
+                }
+                $non_leaf_sub_aggregations_count++;
+
+
+                // Nested aggregations and filter aggregations have no impact
+                // on grouping process
+                $aggregation_node['aggregation_type'] = $skipable_aggregation_infos['type'];
+
+                $sub_rows = $this->simplifyAggregations(
+                    $aggregation_node[ $aggregation_key ],
+                    $previous_group_by_values,
+                    $previous_operations_values,
+                    $aggregation_node,
+                    $last_nonnested_parent_doc_count
+                );
+
+                foreach ($sub_rows as $sub_row_id => $sub_row) {
+                    $new_sub_rows[ $sub_row_id ] = $sub_row;
+                }
+            }
         }
-        elseif ($operation_key = $this->findCalculationKey($aggregation_node)) {
-            // extract values from operation aggregations
+
+        //
+        $out = [];
+        if ( ! $non_leaf_sub_aggregations_count) {
             $row_id = $this->doubleImplodeOfGroupedByValues(
-                $previous_aggregation_values
+                $previous_group_by_values
             );
 
-            $out[ $row_id ] = $previous_aggregation_values;
-            $out[ $row_id ][
-                $operation_key['type'] . '_' . $operation_key['field']
-            ] = $operation_key['value'];
-
-            if (isset($aggregation_node['doc_count'])) {
-                $out[ $row_id ][self::COUNT] = $aggregation_node['doc_count'];
-            }
-            else {
-                // When an aggregagtion (sum, avg) is not nested into an
-                // other one, we need to use the global count stored in
-                // the hits entry of the result.
-                $out[ $row_id ][self::COUNT] = $this->es_result['hits']['total'];
-            }
-        }
-        elseif ($operation_key = $this->findHistogramKey($aggregation_node)) {
-            // extract values from operation aggregations
-            $row_id = $this->doubleImplodeOfGroupedByValues(
-                $previous_aggregation_values
+            $out[ $row_id ] = array_merge_recursive(
+                $previous_group_by_values,
+                $previous_operations_values
             );
-
-            $out[ $row_id ] = $previous_aggregation_values;
-            $out[ $row_id ][
-                $operation_key['type'].'_'.$operation_key['field']
-            ] = $operation_key['value'];
-
-
-            if (isset($aggregation_node['doc_count'])) {
-                $out[ $row_id ][self::COUNT] = $aggregation_node['doc_count'];
-            }
-            else {
-                $out[ $row_id ][self::COUNT] = array_sum($operation_key['value']);
-            }
         }
         else {
-            // generate row_id
-            $row_id = $this->doubleImplodeOfGroupedByValues(
-                $previous_aggregation_values
-            );
-
-            $previous_aggregation_values[self::COUNT] = $aggregation_node['doc_count'];
-            $out[ $row_id ] = $previous_aggregation_values;
+            foreach ($new_sub_rows as $new_row_id => $new_row) {
+                $out[ $new_row_id ] = $new_row;
+            }
         }
 
         return $out;
@@ -407,12 +427,12 @@ class ElasticSearchResult implements \JsonSerializable
      *     'type'  => 'group_by',
      * ]
      */
-    protected function findGroupByKey(array $aggregation_bucket)
+    protected function findGroupByKey($key, $aggregation_entry)
     {
-        foreach ($aggregation_bucket as $key => $value) {
+        // foreach ($aggregation_bucket as $key => $value) {
 
-            if (!is_array($value))
-                continue;
+            // if (!is_array($aggregation_entry))
+                // continue;
 
             if (preg_match('/^group_by_(.*)$/', $key, $result)) {
                 return [
@@ -421,7 +441,7 @@ class ElasticSearchResult implements \JsonSerializable
                     'type'  => 'group_by',
                 ];
             }
-        }
+        // }
 
         return null;
     }
@@ -429,11 +449,12 @@ class ElasticSearchResult implements \JsonSerializable
     /**
      * Checks if an aggregation is a group_by one.
      */
-    protected function findFilterKey(array $aggregation_bucket)
+    // protected function findFilterKey(array $aggregation_bucket)
+    protected function findFilterKey($key, $aggregation_entry)
     {
-        foreach ($aggregation_bucket as $key => $value) {
-            if (!is_array($value))
-                continue;
+        // foreach ($aggregation_bucket as $key => $value) {
+            // if (!is_array($value))
+                // continue;
 
             if (preg_match('/^filter_(.*)$/', $key, $result)) {
                 return [
@@ -442,7 +463,7 @@ class ElasticSearchResult implements \JsonSerializable
                     'field' => $result[1],
                 ];
             }
-        }
+        // }
 
         return null;
     }
@@ -450,11 +471,12 @@ class ElasticSearchResult implements \JsonSerializable
     /**
      * Checks if an aggregation is a group_by one.
      */
-    protected function findNestedKey(array $aggregation_bucket)
+    // protected function findNestedKey(array $aggregation_bucket)
+    protected function findNestedKey($key, $aggregation_entry)
     {
-        foreach ($aggregation_bucket as $key => $value) {
-            if (!is_array($value))
-                continue;
+        // foreach ($aggregation_bucket as $key => $value) {
+            // if (!is_array($value))
+                // continue;
 
             if (preg_match('/^nested_(.*)$/', $key, $result)) {
                 return [
@@ -463,7 +485,7 @@ class ElasticSearchResult implements \JsonSerializable
                     'field' => $result[1],
                 ];
             }
-        }
+        // }
 
         return null;
     }
@@ -471,21 +493,22 @@ class ElasticSearchResult implements \JsonSerializable
     /**
      * Checks if an aggregation is a calculation one. and extracts its value
      */
-    protected function findCalculationKey(array $aggregation_bucket)
+    // protected function findCalculationKey(array $aggregation_bucket)
+    protected function findCalculationKey($key, $aggregation_entry)
     {
-        foreach ($aggregation_bucket as $key => $value) {
+        // foreach ($aggregation_bucket as $key => $value) {
 
-            if (!is_array($value))
-                continue;
+            // if (!is_array($value))
+                // continue;
 
             if (preg_match('/^calculation_(extended_stats|[^_]+)_(.+)$/', $key, $result)) {
 
                 if (in_array($result[1], ['extended_stats', 'custom'])) {
-                    $value = $aggregation_bucket[$key];
-                } elseif (isset($aggregation_bucket[$key]['value'])) {
-                    $value = $aggregation_bucket[$key]['value'];
+                    $value = $aggregation_entry;
+                } elseif (isset($aggregation_entry['value'])) {
+                    $value = $aggregation_entry['value'];
                 } else {
-                    $value = $aggregation_bucket[$key]['values'];
+                    $value = $aggregation_entry['values'];
                 }
 
                 return [
@@ -495,24 +518,24 @@ class ElasticSearchResult implements \JsonSerializable
                     'value' => $value,
                 ];
             }
-        }
+        // }
 
         return null;
     }
 
     /**
      */
-    protected function findHistogramKey(array $aggregation_bucket)
+    protected function findHistogramKey($key, $aggregation_entry)
     {
-        foreach ($aggregation_bucket as $key => $value) {
+        // foreach ($aggregation_bucket as $key => $value) {
 
-            if (!is_array($value))
-                continue;
+            // if (!is_array($value))
+                // continue;
 
             if (preg_match('/^histogram_(.+)_([^_]+)$/', $key, $result)) {
 
                 $values = [];
-                foreach ($aggregation_bucket[$key]['buckets'] as $bucket) {
+                foreach ($aggregation_entry['buckets'] as $bucket) {
                     $values[$bucket['key']] = $bucket['doc_count'];
                 }
 
@@ -523,7 +546,7 @@ class ElasticSearchResult implements \JsonSerializable
                     'value' => $values,
                 ];
             }
-        }
+        // }
 
         return null;
     }
