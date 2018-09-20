@@ -123,16 +123,25 @@ class ElasticSearchQuery implements \JsonSerializable
     protected $aggregationNames = [];
 
     /**
+     * Build aggregation for ES request
      *
+     * @param string    $field_alias
+     * @param array     $aggregation_parameters
+     * @param bool      $change_aggregation_level
+     * @param bool      $store_for_duplicate_check
+     *
+     * @return $this
      */
-    private function aggregate($field_alias, array $aggregation_parameters, $change_aggregation_level=true)
+    private function aggregate($field_alias, array $aggregation_parameters, $change_aggregation_level=true, $store_for_duplicate_check=true)
     {
         if (in_array($field_alias, $this->aggregationNames) ) {
             // avoid duplicating aggregations
             return $this;
         }
 
-        $this->aggregationNames[] = $field_alias;
+        if ($store_for_duplicate_check) {
+            $this->aggregationNames[] = $field_alias;
+        }
 
         /** /
         if ($field_alias == 'avg') {
@@ -783,6 +792,12 @@ class ElasticSearchQuery implements \JsonSerializable
     public function getSearchParams()
     {
         foreach ($this->group_by_aggregations_on_nested_fields as $name => $aggregation_parameters) {
+            // If we have a nested aggregation, we need to add the leaf operations at the same level
+            if (!empty($aggregation_parameters['nested']['path']) && !empty($this->queued_leaf_operations)) {
+                foreach ($this->queued_leaf_operations as $operation_name => $operation_aggregation_parameters) {
+                    $this->aggregate($operation_name, $operation_aggregation_parameters, false, false);
+                }
+            }
             $this->aggregate($name, $aggregation_parameters);
         }
         
