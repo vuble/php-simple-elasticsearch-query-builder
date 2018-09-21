@@ -760,11 +760,29 @@ class ElasticSearchQuery implements \JsonSerializable
                 throw new \ErrorException("Queries of type {$type} not implemented.");
             }
 
-            $name   = 'calculation_'.$es_aggregation_type.'_'.$parameters['field'];
+            if (is_array($parameters['field'])) {
+                if (empty($parameters['field']['field'])) {
+                    throw new \InvalidArgumentException(
+                        "Please provide a 'field' te generate a column name for "
+                        ."your operation result"
+                    );
+                }
+
+                // future name of the generated field would like 'avg_<field>'
+                $field = $parameters['field']['field'];
+                // We remove the fake composit field entry
+                $parameters = [
+                    'script' => $parameters['field']['script'],
+                ];
+            }
+            else {
+                $field = $parameters['field'];
+                $parameters['field'] = $this->renameField( $parameters['field'] );
+            }
+
+            $name   = 'calculation_'.$es_aggregation_type.'_'.$field;
             $params = [
-                $es_aggregation_type => [
-                    'field' => $this->renameField( $parameters['field'] ),
-                ],
+                $es_aggregation_type => $parameters,
             ];
         }
 
