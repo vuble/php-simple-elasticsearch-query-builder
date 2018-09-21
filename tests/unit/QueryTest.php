@@ -50,7 +50,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         }], true);
 
         $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
-        
+
         $this->assertEquals([
             ['osef' => []],
         ], $filters);
@@ -408,8 +408,8 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ['aggregations']['group_by_field_2']
             ['aggregations']
             ;
-            
-        
+
+
         $this->assertEquals([
             'sum' => ['field' => 'field_to_sum']
         ], $operations['calculation_sum_field_to_sum']);
@@ -454,7 +454,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ['aggregations']['group_by_nest.field_1']
             ['aggregations']['group_by_nest.field_2']
         );
-
     }
 
     /**
@@ -496,7 +495,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ->setFieldRenamer(function($field_name) {
                 if ($field_name == 'field_to_rename')
                     return 'renamed_field';
-                
+
                 return $field_name;
             })
             ->addOperationAggregation( ElasticSearchQuery::SUM, ['field' => 'field_to_rename'], false)
@@ -513,10 +512,10 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ])
             ;
 
-            
+
         $es_query = $query->getSearchParams();
         // print_r($es_query);
-        
+
         $this->assertEquals([
             'sum' => ['field' => 'renamed_field']
         ], $es_query['body']['aggregations']['calculation_sum_field_to_rename']);
@@ -524,11 +523,11 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals([
             'sum' => ['field' => 'field_with_good_name']
         ], $es_query['body']['aggregations']['calculation_sum_field_with_good_name']);
-        
+
         $this->assertEquals([
             'avg' => ['field' => 'field_for_avg']
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
-        
+
         $this->assertEquals([
             'histogram' => [
                 'field'         => 'field-for-histogram',
@@ -542,7 +541,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']
                                             ['calculation_custom_field-for-custom_c5438a396e5e1b0c693a325c0403c4f3']
         );
-        
+
     }
 
     /**
@@ -569,10 +568,10 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ])
             ;
 
-            
+
         $es_query = $query->getSearchParams();
         // var_export($es_query);
-        
+
         $this->assertEquals([
             'sum' => ['field' => 'field']
         ], $es_query['body']['aggregations']['calculation_sum_field']);
@@ -580,7 +579,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals([
             'avg' => ['field' => 'field_for_avg']
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['calculation_avg_field_for_avg']);
-        
+
         $this->assertEquals([
             'histogram' => [
                 'field'         => 'field-for-histogram',
@@ -604,7 +603,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $query
             ->addOperationAggregation( ElasticSearchQuery::COUNT, ['field' => 'field'], false);
         $es_query = $query->getSearchParams();
-        
+
         $this->assertEquals(false, isset($es_query['body']['aggregations']));
     }
 
@@ -649,9 +648,9 @@ class QueryTest extends \PHPUnit_Framework_TestCase
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
         $query->where('field', '<', 'value');
-        
+
         $json = \json_encode($query);
-        
+
         $this->assertEquals(
             '{"index":null,"ignore_unavailable":true,"body":{"query":{"constant_score":{"filter":{"bool":{"must":[{"range":{"field":{"lt":"value"}}}]}}}},"size":0}}'
             , $json
@@ -668,7 +667,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             'my_index'
             , $query->getSearchParams()['index']
         );
-        
+
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
         $query->setIndex( ['my_index', 'my_index2'] );
         $this->assertEquals(

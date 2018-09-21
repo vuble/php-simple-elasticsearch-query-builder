@@ -702,23 +702,23 @@ class ElasticSearchQuery implements \JsonSerializable
         elseif ($type == self::SCRIPT) {
             $es_aggregation_type = 'script';
             $name = 'script_'.$parameters['field'];
-            
+
             $parameters['field'] = $this->renameField( $parameters['field'] );
-            
+
             if (empty($parameters['field'])) {
                 throw new \InvalidArgumentException(
                     "Missing 'field' in parameters for a SCRIPT operation aggregation: \n"
                     .var_export($parameters, true)
                 );
             }
-            
+
             if (empty($parameters['script'])) {
                 throw new \InvalidArgumentException(
                     "Missing 'script' in parameters for a SCRIPT operation aggregation: \n"
                     .var_export($parameters, true)
                 );
             }
-            
+
             $params = [
                 'terms' => $parameters,
             ];
@@ -759,7 +759,7 @@ class ElasticSearchQuery implements \JsonSerializable
             else {
                 throw new \ErrorException("Queries of type {$type} not implemented.");
             }
-            
+
             $name   = 'calculation_'.$es_aggregation_type.'_'.$parameters['field'];
             $params = [
                 $es_aggregation_type => [
@@ -800,11 +800,11 @@ class ElasticSearchQuery implements \JsonSerializable
             }
             $this->aggregate($name, $aggregation_parameters);
         }
-        
+
         foreach ($this->queued_leaf_operations as $name => $aggregation_parameters) {
             $this->aggregate($name, $aggregation_parameters, false);
         }
-        
+
         $params = [
             'index'              => $this->index_pattern,
             'ignore_unavailable' => true,                               // https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html#multi-index
@@ -874,8 +874,18 @@ class ElasticSearchQuery implements \JsonSerializable
             catch (\Exception $e) {
                 $es_response = json_decode($e->getMessage(), JSON_OBJECT_AS_ARRAY);
 
+                if (isset($es_response['error']['caused_by']['reason'])) {
+                    $reason = $es_response['error']['caused_by']['reason'];
+                }
+                elseif (isset($es_response['error']['root_cause'][0]['reason'])) {
+                    $reason = $es_response['error']['root_cause'][0]['reason'];
+                }
+                else {
+                    $reason = 'Unable to extract reason from es response';
+                }
+
                 throw new \RuntimeException(
-                    get_class($e).": {$es_response['error']['caused_by']['reason']}\n"
+                    get_class($e).": $reason\n"
                     .$e->getFile().' - '.$e->getLine()."\n\n"
                     .json_encode($es_response, JSON_PRETTY_PRINT)."\n\n"
                     ."Failing Request: \n"
@@ -982,8 +992,8 @@ class ElasticSearchQuery implements \JsonSerializable
 
     /**
      * Checks if a field is nested based on the list of nested fields
-     * 
-     * @param  string The field to check 
+     *
+     * @param  string The field to check
      * @param  string The variable to store the found nested field in
      *
      * @return bool
@@ -996,7 +1006,7 @@ class ElasticSearchQuery implements \JsonSerializable
                 return true;
             }
         }
-        
+
         return false;
     }
 
