@@ -520,12 +520,17 @@ class ElasticSearchResult implements \JsonSerializable
 
             if (in_array($result[1], ['extended_stats', 'custom'])) {
                 $value = $aggregation_entry;
-            } elseif (isset($aggregation_entry['value'])) {
+            } elseif (array_key_exists('value', $aggregation_entry)) {
                 $value = $aggregation_entry['value'];
-            } else {
+            } elseif (array_key_exists('values', $aggregation_entry)) {
                 $value = $aggregation_entry['values'];
             }
-
+            else {
+                throw new \InvalidArgumentException(
+                    "Unable to extract value from calculation aggregation '$key': \n"
+                    .var_export($aggregation_entry, true)
+                );
+            }
             return [
                 'key'   => $key,
                 'type'  => $result[1],

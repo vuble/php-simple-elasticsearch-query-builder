@@ -596,6 +596,49 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     */
+    public function test_getAsSqlResult_operation_on_script_aggregation()
+    {
+        // ne rsult case
+        $result = (new ElasticSearchResult(
+        [
+            "hits" => [
+                "total" => 36185,
+                "max_score" => 0,
+                "hits" => []
+            ],
+            "aggregations" => [
+                "group_by_campaign_id" => [
+                    "doc_count_error_upper_bound" => 0,
+                    "sum_other_doc_count" => 0,
+                    "buckets" => [
+                        [
+                            "key" => 1357,
+                            "doc_count" => 36185,
+                            "calculation_avg_scroll_size" => [
+                                "value" => null
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals([
+                'campaign_id:1357' => [
+                    'campaign_id' => 1357,
+                    'total' => 36185,
+                    'avg_scroll_size' => NULL,
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
      * @unit
      */
     public function test_getHits()
