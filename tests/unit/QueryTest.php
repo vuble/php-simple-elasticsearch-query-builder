@@ -644,6 +644,65 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_addOperationAggregation_inline()
+    {
+        $query = new ElasticSearchQuery;
+
+        $query
+            // ->setNestedFields(['nested_field'])
+            // ->groupBy('nested_field')
+            ->addOperationAggregation(
+                ElasticSearchQuery::INLINE,
+                [
+                    "width_ratio.mean" => [
+                        "terms" => [
+                            "field" => "width_ratio.mean",
+                            "script" => "Math.round( 16 * _value )",
+                            "size" => 0
+                        ],
+                        "aggregations" => [
+                            "height_ratio.mean" => [
+                                "terms" => [
+                                    "field" => "height_ratio.mean",
+                                    "script" => "Math.round( 9 * _value )",
+                                    "size" => 0
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            )
+            ;
+
+        $es_query = $query->getSearchParams();
+
+        // normal leaf average operation
+        $this->assertEquals(
+            [
+                "inline_width_ratio.mean" => [
+                    "terms" => [
+                        "field" => "width_ratio.mean",
+                        "script" => "Math.round( 16 * _value )",
+                        "size" => 0
+                    ],
+                    "aggregations" => [
+                        "height_ratio.mean" => [
+                            "terms" => [
+                                "field" => "height_ratio.mean",
+                                "script" => "Math.round( 9 * _value )",
+                                "size" => 0
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            $es_query['body']
+            ['aggregations']
+        );
+    }
+
+    /**
+     */
     public function test_json_encode()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );

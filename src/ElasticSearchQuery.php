@@ -41,6 +41,7 @@ class ElasticSearchQuery implements \JsonSerializable
     const SCRIPT            = 'script';
     const HISTOGRAM         = 'histogram';
     const CUSTOM            = 'custom';
+    const INLINE            = 'inline'; // aggregations provide directly as ES json DSL
 
     /** @var string MISSING_AGGREGATION_FIELD
      * If a field to aggregate on for grouping is missing, we need a default value
@@ -641,6 +642,7 @@ class ElasticSearchQuery implements \JsonSerializable
             // self::GEO_CENTROID,
             self::SCRIPT,
             self::CUSTOM,
+            self::INLINE,
         ];
     }
 
@@ -691,13 +693,26 @@ class ElasticSearchQuery implements \JsonSerializable
             // aggregations
             return $this;
         }
-        elseif($type == self::CUSTOM) {
+        elseif ($type == self::CUSTOM) {
             $name   = 'calculation_custom_'
                     . $parameters['field']
                     . '_'.hash('md4', serialize($parameters['specific_filters']));
             $params = [
                 'filters' => $parameters['specific_filters'],
             ];
+        }
+        elseif ($type == self::INLINE) {
+            if ( ! $as_leaf_of_aggregation_tree) {
+                throw new \InvalidArgumentException(
+                    "Inline operations implemented only as leaf operations"
+                );
+            }
+
+            foreach ($parameters as $operation_name => $inline_aggregation_parameters) {
+                $this->queued_leaf_operations['inline_'.$operation_name] = $inline_aggregation_parameters;
+            }
+
+            return $this;
         }
         elseif ($type == self::SCRIPT) {
             $es_aggregation_type = 'script';
