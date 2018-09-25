@@ -639,6 +639,113 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     */
+    public function test_getAsSqlResult_operation_on_inline_aggregation()
+    {
+        // ne rsult case
+        $result = (new ElasticSearchResult(
+            [
+                "aggregations" => [
+                    "inline_width_ratio.mean" => [
+                        "doc_count_error_upper_bound" => 0,
+                        "sum_other_doc_count" => 0,
+                        "buckets" => [
+                            [
+                                "key" => 5,
+                                "doc_count" => 1357,
+                                "height_ratio.mean" => [
+                                    "doc_count_error_upper_bound" => 0,
+                                    "sum_other_doc_count" => 0,
+                                    "buckets" => [
+                                        [
+                                            "key" => 2,
+                                            "doc_count" => 522
+                                        ],
+                                        [
+                                            "key" => 3,
+                                            "doc_count" => 483
+                                        ],
+                                    ]
+                                ]
+                            ],
+                            [
+                                "key" => 7,
+                                "doc_count" => 611,
+                                "height_ratio.mean" => [
+                                    "doc_count_error_upper_bound" => 0,
+                                    "sum_other_doc_count" => 0,
+                                    "buckets" => [
+                                        [
+                                            "key" => 3,
+                                            "doc_count" => 352
+                                        ],
+                                        [
+                                            "key" => 4,
+                                            "doc_count" => 139
+                                        ],
+                                    ]
+                                ]
+                            ],
+                        ]
+                    ]
+                ]
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            [
+                0 => [
+                    "inline_width_ratio.mean" => [
+                        "doc_count_error_upper_bound" => 0,
+                        "sum_other_doc_count" => 0,
+                        "buckets" => [
+                            [
+                                "key" => 5,
+                                "doc_count" => 1357,
+                                "height_ratio.mean" => [
+                                    "doc_count_error_upper_bound" => 0,
+                                    "sum_other_doc_count" => 0,
+                                    "buckets" => [
+                                        [
+                                            "key" => 2,
+                                            "doc_count" => 522
+                                        ],
+                                        [
+                                            "key" => 3,
+                                            "doc_count" => 483
+                                        ],
+                                    ]
+                                ]
+                            ],
+                            [
+                                "key" => 7,
+                                "doc_count" => 611,
+                                "height_ratio.mean" => [
+                                    "doc_count_error_upper_bound" => 0,
+                                    "sum_other_doc_count" => 0,
+                                    "buckets" => [
+                                        [
+                                            "key" => 3,
+                                            "doc_count" => 352
+                                        ],
+                                        [
+                                            "key" => 4,
+                                            "doc_count" => 139
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
      * @unit
      */
     public function test_getHits()

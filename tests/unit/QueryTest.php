@@ -696,8 +696,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                     ],
                 ],
             ],
-            $es_query['body']
-            ['aggregations']
+            $es_query['body']['aggregations']
         );
     }
 

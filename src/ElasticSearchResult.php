@@ -219,6 +219,12 @@ class ElasticSearchResult implements \JsonSerializable
                     $operation_key['type'] . '_' . $operation_key['field']
                 ] = array_column($aggregation_entry['buckets'], 'key');
             }
+            elseif ($operation_key = $this->findInlineKey($aggregation_key, $aggregation_entry)) {
+                // no post process for inline aggregations
+                $previous_operations_values[
+                    $operation_key['type'] . '_' . $operation_key['field']
+                ] = $aggregation_entry;
+            }
         }
 
         // print_r([
@@ -477,10 +483,22 @@ class ElasticSearchResult implements \JsonSerializable
         return null;
     }
 
+    protected function findInlineKey($key, $aggregation_entry)
+    {
+        if (preg_match('/^inline_(.*)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'field' => $result[1],
+                'type'  => 'inline',
+            ];
+        }
+
+        return null;
+    }
+
     /**
      * Checks if an aggregation is a group_by one.
      */
-    // protected function findFilterKey(array $aggregation_bucket)
     protected function findFilterKey($key, $aggregation_entry)
     {
         if (preg_match('/^filter_(.*)$/', $key, $result)) {
