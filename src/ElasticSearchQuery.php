@@ -50,6 +50,10 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     const MISSING_AGGREGATION_FIELD = -1;
 
+
+    /** @var string Elastic Search time unit */
+    protected $request_timeout = null;
+
     protected $aggregations;
     protected $current_aggregation   = [];
 
@@ -179,6 +183,17 @@ class ElasticSearchQuery implements \JsonSerializable
         }
 
         return $this;
+    }
+
+    public function setRequestTimeout($request_timeout)
+    {
+        $this->request_timeout = $request_timeout;
+        return $this;
+    }
+
+    public function getRequestTimeout()
+    {
+        return $this->request_timeout;
     }
 
     /**
@@ -852,6 +867,10 @@ class ElasticSearchQuery implements \JsonSerializable
             ]
         ];
 
+        if ($this->getRequestTimeout() !== null) {
+            $params['body']['request_timeout'] = $this->getRequestTimeout();
+        }
+
         if ($this->getAggregationsQueryPart() !== null) {
             $params['body']['aggregations'] = $this->getAggregationsQueryPart();
         }
@@ -880,9 +899,9 @@ class ElasticSearchQuery implements \JsonSerializable
         $params = $this->getSearchParams();
 
         // we disable the cache if the current day is between the ranges
-        $today = new \DateTime('today');
         $cache_is_enabled = !isset($_REQUEST['es_nocache']) || Debug::get('disable_es_cache');
         // $cache_is_enabled = false;
+        // $today = new \DateTime('today');
         // foreach ($this->dateRanges as $i => $dateRange) {
             // if ($dateRange['start'] <= $today && $dateRange['end'] >= $today)
                 // $cache_is_enabled = false;
