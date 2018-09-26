@@ -710,7 +710,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $json = \json_encode($query);
 
         $this->assertEquals(
-            '{"index":null,"ignore_unavailable":true,"body":{"query":{"constant_score":{"filter":{"bool":{"must":[{"range":{"field":{"lt":"value"}}}]}}}},"size":0}}'
+            '{"index":null,"ignore_unavailable":true,"body":{"allow_partial_search_results":false,"query":{"constant_score":{"filter":{"bool":{"must":[{"range":{"field":{"lt":"value"}}}]}}}},"size":0}}'
             , $json
         );
     }
@@ -786,6 +786,10 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(
             '30s'
             , $query->getSearchParams()['body']['timeout']
+        );
+
+        $this->assertEquals(
+            false, $query->getSearchParams()['body']['allow_partial_search_results']
         );
     }
 
