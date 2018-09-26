@@ -50,6 +50,10 @@ class ElasticSearchQuery implements \JsonSerializable
      */
     const MISSING_AGGREGATION_FIELD = -1;
 
+
+    /** @var string Elastic Search time unit */
+    protected $request_timeout = null;
+
     protected $aggregations;
     protected $current_aggregation   = [];
 
@@ -179,6 +183,17 @@ class ElasticSearchQuery implements \JsonSerializable
         }
 
         return $this;
+    }
+
+    public function setRequestTimeout($request_timeout)
+    {
+        $this->request_timeout = $request_timeout;
+        return $this;
+    }
+
+    public function getRequestTimeout()
+    {
+        return $this->request_timeout;
     }
 
     /**
@@ -851,6 +866,10 @@ class ElasticSearchQuery implements \JsonSerializable
                 'size'         => isset($_REQUEST['debug_es']) ? 3 : 0, // return only aggregation results (forget hits)
             ]
         ];
+
+        if ($this->getRequestTimeout() !== null) {
+            $params['body']['request_timeout'] = $this->getRequestTimeout();
+        }
 
         if ($this->getAggregationsQueryPart() !== null) {
             $params['body']['aggregations'] = $this->getAggregationsQueryPart();
