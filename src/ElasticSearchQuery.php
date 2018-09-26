@@ -868,7 +868,7 @@ class ElasticSearchQuery implements \JsonSerializable
         ];
 
         if ($this->getRequestTimeout() !== null) {
-            $params['body']['request_timeout'] = $this->getRequestTimeout();
+            $params['body']['timeout'] = $this->getRequestTimeout();
         }
 
         if ($this->getAggregationsQueryPart() !== null) {
