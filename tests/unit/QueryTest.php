@@ -769,5 +769,25 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     */
+    public function test_getRequestTimeout()
+    {
+
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->setRequestTimeout( '1h' );
+        $this->assertEquals(
+            '1h'
+            , $query->getSearchParams()['body']['request_timeout']
+        );
+
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->setRequestTimeout( '30s' );
+        $this->assertEquals(
+            '30s'
+            , $query->getSearchParams()['body']['request_timeout']
+        );
+    }
+
     /**/
 }
