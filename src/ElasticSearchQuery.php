@@ -857,7 +857,6 @@ class ElasticSearchQuery implements \JsonSerializable
             'index'              => $this->index_pattern,
             'ignore_unavailable' => true,                               // https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html#multi-index
             'body'               => [
-                'allow_partial_search_results' => false,                // error in case of timeout https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html
                 'query' => [
                     'constant_score' => [
                         'filter' => [
