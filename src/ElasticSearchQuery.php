@@ -899,9 +899,9 @@ class ElasticSearchQuery implements \JsonSerializable
         $params = $this->getSearchParams();
 
         // we disable the cache if the current day is between the ranges
-        $today = new \DateTime('today');
         $cache_is_enabled = !isset($_REQUEST['es_nocache']) || Debug::get('disable_es_cache');
         // $cache_is_enabled = false;
+        // $today = new \DateTime('today');
         // foreach ($this->dateRanges as $i => $dateRange) {
             // if ($dateRange['start'] <= $today && $dateRange['end'] >= $today)
                 // $cache_is_enabled = false;
