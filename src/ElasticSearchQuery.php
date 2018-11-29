@@ -185,6 +185,9 @@ class ElasticSearchQuery implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     public function setRequestTimeout($request_timeout)
     {
         $this->request_timeout = $request_timeout;
@@ -597,6 +600,8 @@ class ElasticSearchQuery implements \JsonSerializable
 
     /**
      * Defines the indexes to look into
+     *
+     * @return $this
      */
     public function setIndex($index_pattern)
     {
@@ -1035,6 +1040,7 @@ class ElasticSearchQuery implements \JsonSerializable
     }
 
     /**
+     * @return $this
      */
     public function setNestedFields(array $fields)
     {
