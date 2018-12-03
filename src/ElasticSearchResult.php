@@ -88,6 +88,12 @@ class ElasticSearchResult implements \JsonSerializable
      */
     public function getAsSqlResult()
     {
+        if ($this->es_result['timed_out']) {
+            throw new \RuntimeException(
+                "The ES query was timed out"
+            );
+        }
+
         if (!isset($this->es_result['aggregations'])) {
             $count = isset($this->es_result['hits']['total'])
                 ? $this->es_result['hits']['total']
