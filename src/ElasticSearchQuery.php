@@ -898,69 +898,31 @@ class ElasticSearchQuery implements \JsonSerializable
     {
         $params = $this->getSearchParams();
 
-        // we disable the cache if the current day is between the ranges
-        $cache_is_enabled = !isset($_REQUEST['es_nocache']) || Debug::get('disable_es_cache');
-        // $cache_is_enabled = false;
-        // $today = new \DateTime('today');
-        // foreach ($this->dateRanges as $i => $dateRange) {
-            // if ($dateRange['start'] <= $today && $dateRange['end'] >= $today)
-                // $cache_is_enabled = false;
-        // }
-
-        // $profiler_token = Profiler::start('es', __METHOD__ . '::' . __LINE__);
-
-        $cache_key = hash('crc32b', var_export($params, true)).'-es';
-
-        if ($cache_is_enabled && empty($options['disable_cache'])) {
-            if ($cached = \Cache::get($cache_key)) {
-                $result = unserialize($cached);
-            }
+        try {
+            $result = $client->search($params);
         }
+        catch (\Exception $e) {
+            $es_response = json_decode($e->getMessage(), JSON_OBJECT_AS_ARRAY);
 
-        if (!isset($result)) {
-            // $client = \ElasticSearch_Server::getClient();
-
-            try {
-                $result = $client->search($params);
+            if (isset($es_response['error']['caused_by']['reason'])) {
+                $reason = $es_response['error']['caused_by']['reason'];
             }
-            catch (\Exception $e) {
-                $es_response = json_decode($e->getMessage(), JSON_OBJECT_AS_ARRAY);
-
-                if (isset($es_response['error']['caused_by']['reason'])) {
-                    $reason = $es_response['error']['caused_by']['reason'];
-                }
-                elseif (isset($es_response['error']['root_cause'][0]['reason'])) {
-                    $reason = $es_response['error']['root_cause'][0]['reason'];
-                }
-                else {
-                    $reason = 'Unable to extract reason from es response';
-                }
-
-                throw new \RuntimeException(
-                    get_class($e).": $reason\n"
-                    .$e->getFile().' - '.$e->getLine()."\n\n"
-                    .json_encode($es_response, JSON_PRETTY_PRINT)."\n\n"
-                    ."Failing Request: \n"
-                    .json_encode($params)."\n\n"
-                );
+            elseif (isset($es_response['error']['root_cause'][0]['reason'])) {
+                $reason = $es_response['error']['root_cause'][0]['reason'];
+            }
+            else {
+                $reason = 'Unable to extract reason from es response';
             }
 
-            \Cache::set(
-                $cache_key,
-                serialize($result),
-                \MB::$config->load('elasticSearch.query_cache') ? : 60 * 5
+            throw new \RuntimeException(
+                get_class($e).": $reason\n"
+                .$e->getFile().' - '.$e->getLine()."\n\n"
+                .json_encode($es_response, JSON_PRETTY_PRINT)."\n\n"
+                ."Failing Request: \n"
+                .json_encode($params)."\n\n"
             );
         }
 
-        // Profiler::stop($profiler_token);
-
-        // echo json_encode([
-            // 'method' => __FILE__ . ' ' . __LINE__,
-            // 'file'   => __METHOD__,
-            // 'stats'  => Profiler::stats([$profiler_token]),
-        // ]);
-
-        // return new ElasticSearch_Result($result);
         return new ElasticSearchResult($result);
     }
 
