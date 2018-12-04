@@ -52,7 +52,7 @@ class ElasticSearchQuery implements \JsonSerializable
 
 
     /** @var string Elastic Search time unit */
-    protected $request_timeout = null;
+    protected $timeout = null;
 
     protected $aggregations;
     protected $current_aggregation   = [];
@@ -186,17 +186,33 @@ class ElasticSearchQuery implements \JsonSerializable
     }
 
     /**
+     * @deprectaed $this->setTimeout($timeout)
+     */
+    public function setRequestTimeout($timeout)
+    {
+        return $this->setTimeout($timeout);
+    }
+
+    /**
+     * @deprectaed $this->getTimeout()
+     */
+    public function getRequestTimeout()
+    {
+        return $this->getTimeout();
+    }
+
+    /**
      * @return $this
      */
-    public function setRequestTimeout($request_timeout)
+    public function setTimeout($timeout)
     {
-        $this->request_timeout = $request_timeout;
+        $this->timeout = $timeout;
         return $this;
     }
 
-    public function getRequestTimeout()
+    public function getTimeout()
     {
-        return $this->request_timeout;
+        return $this->timeout;
     }
 
     /**
@@ -905,6 +921,12 @@ class ElasticSearchQuery implements \JsonSerializable
 
         try {
             $result = $client->search($params);
+
+            if ( ! empty($result['timed_out'])) {
+                throw new \RuntimeException(
+                    "The ES query was timed out"
+                );
+            }
         }
         catch (\Exception $e) {
             $es_response = json_decode($e->getMessage(), JSON_OBJECT_AS_ARRAY);
