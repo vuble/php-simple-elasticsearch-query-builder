@@ -921,12 +921,6 @@ class ElasticSearchQuery implements \JsonSerializable
 
         try {
             $result = $client->search($params);
-
-            if ( ! empty($result['timed_out'])) {
-                throw new \RuntimeException(
-                    "The ES query was timed out"
-                );
-            }
         }
         catch (\Exception $e) {
             $es_response = json_decode($e->getMessage(), JSON_OBJECT_AS_ARRAY);
@@ -938,7 +932,8 @@ class ElasticSearchQuery implements \JsonSerializable
                 $reason = $es_response['error']['root_cause'][0]['reason'];
             }
             else {
-                $reason = 'Unable to extract reason from es response';
+                // This can happen in case of $client bug
+                throw $e;
             }
 
             throw new \RuntimeException(
@@ -946,7 +941,18 @@ class ElasticSearchQuery implements \JsonSerializable
                 .$e->getFile().' - '.$e->getLine()."\n\n"
                 .json_encode($es_response, JSON_PRETTY_PRINT)."\n\n"
                 ."Failing Request: \n"
-                .json_encode($params)."\n\n"
+                .'<a href="/admin/dev/es_search_query?'.http_build_query( ['es_query' => json_encode($params)] ).'" target="_blank">'
+                .json_encode($params)
+                ."</a>\n\n"
+                ."Response:\n"
+                .$e->getMessage()
+            );
+        }
+
+        if ( ! empty($result['timed_out'])) {
+            throw new \RuntimeException(
+                "The ES query was timed out: \n"
+                .'<a href="/admin/dev/es_search_query?'.http_build_query( ['es_query' => json_encode($params)] ).'" target="_blank">'
             );
         }
 
