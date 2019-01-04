@@ -434,13 +434,25 @@ class ElasticSearchQuery implements \JsonSerializable
                     'gt' => is_array($values) ? max($values) : $values,
                 ],
             ]]) );
-
         }
-        elseif ($operator == '<') {
-
+        elseif ($operator == '>=') {
             $this->addFilter( $this->wrapFilterIfNested( $field, ['range' => [
                 $field => [
-                    'lt' => is_array($values) ? max($values) : $values,
+                    'gte' => is_array($values) ? max($values) : $values,
+                ],
+            ]]) );
+        }
+        elseif ($operator == '<') {
+            $this->addFilter( $this->wrapFilterIfNested( $field, ['range' => [
+                $field => [
+                    'lt' => is_array($values) ? min($values) : $values,
+                ],
+            ]]) );
+        }
+        elseif ($operator == '<=') {
+            $this->addFilter( $this->wrapFilterIfNested( $field, ['range' => [
+                $field => [
+                    'lte' => is_array($values) ? min($values) : $values,
                 ],
             ]]) );
         }
