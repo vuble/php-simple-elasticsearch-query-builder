@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/jclaveau/php-visibility-violator",
-                "reference": "d6187b0d2a498e9c53754859330f7422382f000a"
+                "reference": "d1d7de740a81423d4e063e06d01a305132a71f5e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jclaveau/php-visibility-violator/zipball/d6187b0d2a498e9c53754859330f7422382f000a",
-                "reference": "d6187b0d2a498e9c53754859330f7422382f000a",
+                "url": "https://api.github.com/repos/jclaveau/php-visibility-violator/zipball/d1d7de740a81423d4e063e06d01a305132a71f5e",
+                "reference": "d1d7de740a81423d4e063e06d01a305132a71f5e",
                 "shasum": ""
             },
             "require": {
@@ -48,7 +48,7 @@
                 "violate",
                 "visibility"
             ],
-            "time": "2017-10-24T18:15:15+00:00"
+            "time": "2018-12-30T19:27:28+00:00"
         }
     ],
     "packages-dev": [
@@ -163,12 +163,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/jclaveau/phpunit-testlistener-xhprof",
-                "reference": "e2e5461db5d6b4c51cc6d6ff20e5bf09ea6fb6af"
+                "reference": "b895e743a4fd8d7e11c351842cbf9bfd2a2bd4fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jclaveau/phpunit-testlistener-xhprof/zipball/e2e5461db5d6b4c51cc6d6ff20e5bf09ea6fb6af",
-                "reference": "e2e5461db5d6b4c51cc6d6ff20e5bf09ea6fb6af",
+                "url": "https://api.github.com/repos/jclaveau/phpunit-testlistener-xhprof/zipball/b895e743a4fd8d7e11c351842cbf9bfd2a2bd4fc",
+                "reference": "b895e743a4fd8d7e11c351842cbf9bfd2a2bd4fc",
                 "shasum": ""
             },
             "require": {
@@ -205,7 +205,7 @@
             "support": {
                 "issues": "https://github.com/phpunit/phpunit-testlistener-xhprof/issues"
             },
-            "time": "2018-07-10T13:23:28+00:00"
+            "time": "2018-12-27T15:07:40+00:00"
         },
         {
             "name": "jclaveau/xhprof",
@@ -1391,7 +1391,7 @@
         },
         {
             "name": "symfony/polyfill-ctype",
-            "version": "v1.9.0",
+            "version": "v1.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-ctype.git",
@@ -1449,16 +1449,16 @@
         },
         {
             "name": "symfony/stopwatch",
-            "version": "v3.4.15",
+            "version": "v3.4.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/stopwatch.git",
-                "reference": "deda2765e8dab2fc38492e926ea690f2a681f59d"
+                "reference": "0f43969ab2718de55c1c1158dce046668079788d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/stopwatch/zipball/deda2765e8dab2fc38492e926ea690f2a681f59d",
-                "reference": "deda2765e8dab2fc38492e926ea690f2a681f59d",
+                "url": "https://api.github.com/repos/symfony/stopwatch/zipball/0f43969ab2718de55c1c1158dce046668079788d",
+                "reference": "0f43969ab2718de55c1c1158dce046668079788d",
                 "shasum": ""
             },
             "require": {
@@ -1494,20 +1494,20 @@
             ],
             "description": "Symfony Stopwatch Component",
             "homepage": "https://symfony.com",
-            "time": "2018-07-26T10:03:52+00:00"
+            "time": "2018-11-11T19:48:54+00:00"
         },
         {
             "name": "symfony/yaml",
-            "version": "v3.4.15",
+            "version": "v3.4.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "c2f4812ead9f847cb69e90917ca7502e6892d6b8"
+                "reference": "291e13d808bec481eab83f301f7bff3e699ef603"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/c2f4812ead9f847cb69e90917ca7502e6892d6b8",
-                "reference": "c2f4812ead9f847cb69e90917ca7502e6892d6b8",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/291e13d808bec481eab83f301f7bff3e699ef603",
+                "reference": "291e13d808bec481eab83f301f7bff3e699ef603",
                 "shasum": ""
             },
             "require": {
@@ -1553,24 +1553,25 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "https://symfony.com",
-            "time": "2018-08-10T07:34:36+00:00"
+            "time": "2018-11-11T19:48:54+00:00"
         },
         {
             "name": "webmozart/assert",
-            "version": "1.3.0",
+            "version": "1.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/webmozart/assert.git",
-                "reference": "0df1908962e7a3071564e857d86874dad1ef204a"
+                "reference": "83e253c8e0be5b0257b881e1827274667c5c17a9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/webmozart/assert/zipball/0df1908962e7a3071564e857d86874dad1ef204a",
-                "reference": "0df1908962e7a3071564e857d86874dad1ef204a",
+                "url": "https://api.github.com/repos/webmozart/assert/zipball/83e253c8e0be5b0257b881e1827274667c5c17a9",
+                "reference": "83e253c8e0be5b0257b881e1827274667c5c17a9",
                 "shasum": ""
             },
             "require": {
-                "php": "^5.3.3 || ^7.0"
+                "php": "^5.3.3 || ^7.0",
+                "symfony/polyfill-ctype": "^1.8"
             },
             "require-dev": {
                 "phpunit/phpunit": "^4.6",
@@ -1603,7 +1604,7 @@
                 "check",
                 "validate"
             ],
-            "time": "2018-01-29T19:49:41+00:00"
+            "time": "2018-12-25T11:19:39+00:00"
         }
     ],
     "aliases": [],
