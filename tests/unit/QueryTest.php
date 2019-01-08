@@ -114,7 +114,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
     {
         // simple
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
-        $query->where('field', '>', 'value');
+        $query->where('field', '>', [1, 3, 8, 12, 42]);
 
         $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
 
@@ -122,7 +122,28 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             [
                 'range' => [
                     'field' => [
-                        'gt' => 'value'
+                        'gt' => 42,
+                    ],
+                ]
+            ]
+        ], $filters);
+    }
+
+    /**
+     */
+    public function test_where_greater_or_equal_than()
+    {
+        // simple
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->where('field', '>=', [1, 3, 8, 12, 42]);
+
+        $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
+
+        $this->assertEquals([
+            [
+                'range' => [
+                    'field' => [
+                        'gte' => 42,
                     ],
                 ]
             ]
@@ -134,14 +155,33 @@ class QueryTest extends \PHPUnit_Framework_TestCase
     public function test_where_lower_than()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
-        $query->where('field', '<', 'value');
+        $query->where('field', '<', [1, 3, 8, 12, 42]);
         $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
 
         $this->assertEquals([
             [
                 'range' => [
                     'field' => [
-                        'lt' => 'value'
+                        'lt' => 1
+                    ],
+                ]
+            ]
+        ], $filters);
+    }
+
+    /**
+     */
+    public function test_where_lower_tor_equal_than()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->where('field', '<=', [1, 3, 8, 12, 42]);
+        $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
+
+        $this->assertEquals([
+            [
+                'range' => [
+                    'field' => [
+                        'lte' => 1,
                     ],
                 ]
             ]
