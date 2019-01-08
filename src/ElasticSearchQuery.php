@@ -637,21 +637,26 @@ class ElasticSearchQuery implements \JsonSerializable
         return $this;
     }
 
+    protected $renamed_fields = [];
+
     /**
      */
     protected function renameField($field_name)
     {
-        if (!is_string($field_name)) {
+        if ( ! is_string($field_name)) {
             throw new \InvalidArgumentException(
                 "\$field_name must be a string instead of: "
                 . var_export($field_name, true)
             );
         }
 
-        if (!$this->field_renamer)
+        if ( ! $this->field_renamer)
             return $field_name;
 
-        return call_user_func($this->field_renamer, $field_name);
+        $renamed_field = call_user_func($this->field_renamer, $field_name);
+        $this->renamed_fields[ $renamed_field ] = $field_name;
+
+        return $renamed_field;
     }
 
     /**
@@ -956,7 +961,7 @@ class ElasticSearchQuery implements \JsonSerializable
             );
         }
 
-        return new ElasticSearchResult($result);
+        return new ElasticSearchResult($result, $this->renamed_fields);
     }
 
     /**

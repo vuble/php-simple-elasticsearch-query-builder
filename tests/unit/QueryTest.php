@@ -542,6 +542,15 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                                             ['calculation_custom_field-for-custom_c5438a396e5e1b0c693a325c0403c4f3']
         );
 
+        $this->assertEquals([
+              'renamed_field'        => 'field_to_rename',
+              'field_with_good_name' => 'field_with_good_name',
+              'field_to_groupon'     => 'field_to_groupon',
+              'field_for_avg'        => 'field_for_avg',
+              'field-for-histogram'  => 'field-for-histogram',
+            ],
+            VisibilityViolator::getHiddenProperty($query, 'renamed_fields')
+        );
     }
 
     /**

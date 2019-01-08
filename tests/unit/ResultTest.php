@@ -111,6 +111,100 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     */
+    public function test_getAsSqlResult_renameField()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                'hits' => [
+                    'total' => 4,
+                    'max_score' => 1,
+                    'hits' => []
+                ],
+                'aggregations' => [
+                    'group_by_type' => [
+                        'buckets' => [
+                            0 => [
+                                'key' => 'request',
+                                'doc_count' => 4,
+                                'group_by_id' => [
+                                    'buckets' => [
+                                        0 => [
+                                            'key' => 529,
+                                            'doc_count' => 4,
+                                            'nested_deals' => [
+                                                'doc_count' => 10,
+                                                'filter_deal_id' => [
+                                                    'doc_count' => 10,
+                                                    'group_by_deals.deal_id' => [
+                                                        'buckets' => [
+                                                            0 => [
+                                                                'key' => 'DEAL1',
+                                                                'doc_count' => 1,
+                                                            ],
+                                                            1 => [
+                                                                'key' => 'DEAL2',
+                                                                'doc_count' => 2,
+                                                            ],
+                                                            2 => [
+                                                                'key' => 'DEAL3',
+                                                                'doc_count' => 3,
+                                                            ],
+                                                            3 => [
+                                                                'key' => 'DEAL4',
+                                                                'doc_count' => 4,
+                                                            ],
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'deals.deal_id' => 'deal_id',
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            [
+                'type:request-id:529-deal_id:DEAL1' => [
+                    'type' => 'request',
+                    'id' => 529,
+                    'deal_id' => 'DEAL1',
+                    'total' => 1,
+                ],
+                'type:request-id:529-deal_id:DEAL2' => [
+                    'type' => 'request',
+                    'id' => 529,
+                    'deal_id' => 'DEAL2',
+                    'total' => 2,
+                ],
+                'type:request-id:529-deal_id:DEAL3' => [
+                    'type' => 'request',
+                    'id' => 529,
+                    'deal_id' => 'DEAL3',
+                    'total' => 3,
+                ],
+                'type:request-id:529-deal_id:DEAL4' => [
+                    'type' => 'request',
+                    'id' => 529,
+                    'deal_id' => 'DEAL4',
+                    'total' => 4,
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
      * @unit
      */
     public function test_getAsSqlResult_NestedAggregations_basic()

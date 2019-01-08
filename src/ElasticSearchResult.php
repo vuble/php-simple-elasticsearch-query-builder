@@ -71,12 +71,15 @@ class ElasticSearchResult implements \JsonSerializable
     /** @var COUNT Name of the column containing the number of values in the group */
     const COUNT = 'total';
 
+    protected $renamed_fields;
+
     /**
      *
      */
-    public function __construct(array $elasticsearch_result)
+    public function __construct(array $elasticsearch_result, array $renamed_fields=[])
     {
-        $this->es_result = $elasticsearch_result;
+        $this->es_result      = $elasticsearch_result;
+        $this->renamed_fields = $renamed_fields;
     }
 
     /**
@@ -452,7 +455,7 @@ class ElasticSearchResult implements \JsonSerializable
         if (preg_match('/^group_by_(.*)$/', $key, $result)) {
             return [
                 'key'   => $key,
-                'field' => $result[1],
+                'field' => $this->renameField($result[1]),
                 'type'  => 'group_by',
             ];
         }
@@ -475,7 +478,7 @@ class ElasticSearchResult implements \JsonSerializable
         if (preg_match('/^script_(.*)$/', $key, $result)) {
             return [
                 'key'   => $key,
-                'field' => $result[1],
+                'field' => $this->renameField($result[1]),
                 'type'  => 'script',
             ];
         }
@@ -488,7 +491,7 @@ class ElasticSearchResult implements \JsonSerializable
         if (preg_match('/^inline_(.*)$/', $key, $result)) {
             return [
                 'key'   => $key,
-                'field' => $result[1],
+                'field' => $this->renameField($result[1]),
                 'type'  => 'inline',
             ];
         }
@@ -505,7 +508,7 @@ class ElasticSearchResult implements \JsonSerializable
             return [
                 'key'   => $key,
                 'type'  => 'filter',
-                'field' => $result[1],
+                'field' => $this->renameField($result[1]),
             ];
         }
 
@@ -521,7 +524,7 @@ class ElasticSearchResult implements \JsonSerializable
             return [
                 'key'   => $key,
                 'type'  => 'nested',
-                'field' => $result[1],
+                'field' => $this->renameField($result[1]),
             ];
         }
 
@@ -552,7 +555,7 @@ class ElasticSearchResult implements \JsonSerializable
             return [
                 'key'   => $key,
                 'type'  => $result[1],
-                'field' => $result[2],
+                'field' => $this->renameField($result[2]),
                 'value' => $value,
             ];
         }
@@ -573,7 +576,7 @@ class ElasticSearchResult implements \JsonSerializable
 
             return [
                 'key'   => $key,
-                'field' => $result[1],
+                'field' => $this->renameField($result[1]),
                 'type'  => 'histogram_'.$result[2],
                 'value' => $values,
             ];
@@ -614,6 +617,16 @@ class ElasticSearchResult implements \JsonSerializable
      */
     public function jsonSerialize() {
         return $this->getResults();
+    }
+
+    /**
+     */
+    protected function renameField($field)
+    {
+        return isset($this->renamed_fields[$field])
+            ? $this->renamed_fields[$field]
+            : $field
+            ;
     }
 
     /**/
