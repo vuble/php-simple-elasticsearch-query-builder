@@ -354,6 +354,23 @@ class ElasticSearchQuery implements \JsonSerializable
             });
 
         }
+        elseif ($operator == '!=') {
+            if (! is_scalar($values)) {
+                throw new \ErrorException(
+                    "Non scalar value for != comparison in ES: \n"
+                    .var_export($values, true)
+                );
+            }
+
+            // must_not has to be nested in a bool query
+            $this->addFilterLevel('bool', function($query) use ($field, $values) {
+                $this->addFilterLevel('must_not', function($query) use ($field, $values) {
+                    $this->addFilter( $this->wrapFilterIfNested( $field, [ 'term' => [
+                        $field => $values,
+                    ]]) );
+                }, true);
+            });
+        }
         elseif ($operator == '=') {
 
             if (!is_scalar($values)) {

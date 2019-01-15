@@ -89,7 +89,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
      */
     public function test_where_not_in()
     {
-        // simple
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
         $query->where('field', 'NOT IN', 'value');
 
@@ -101,6 +100,28 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                     [
                         'terms' => [
                             'field' => ['value'],
+                        ]
+                    ],
+                ],
+            ],
+        ]], $filters);
+    }
+
+    /**
+     */
+    public function test_where_not_equal()
+    {
+        $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
+        $query->where('field', '!=', 'value');
+
+        $filters = VisibilityViolator::getHiddenProperty($query, 'filters');
+
+        $this->assertEquals([[
+            'bool' => [
+                'must_not' => [
+                    [
+                        'term' => [
+                            'field' => 'value',
                         ]
                     ],
                 ],
