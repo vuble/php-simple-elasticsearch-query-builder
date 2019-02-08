@@ -2,5 +2,6 @@
 /.idea
 /tests_coverage
 /docs/phpdoc
+/docs/phpdoc-cache-*
 /clover.xml
 composer.lock

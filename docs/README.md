@@ -19,6 +19,7 @@
     * [setIndex](#setindex)
     * [setFieldRenamer](#setfieldrenamer)
     * [addOperationAggregation](#addoperationaggregation)
+    * [getOperations](#getoperations)
     * [getSearchParams](#getsearchparams)
     * [execute](#execute)
     * [directExecute](#directexecute)
@@ -357,6 +358,22 @@ ElasticSearchQuery::addOperationAggregation(  $type, array $parameters = array()
 
 ---
 
+### getOperations
+
+
+
+```php
+ElasticSearchQuery::getOperations(  )
+```
+
+
+
+
+
+
+
+---
+
 ### getSearchParams
 
 
@@ -458,7 +475,7 @@ ElasticSearchQuery::jsonSerialize(  )
 
 
 ```php
-ElasticSearchResult::__construct( array $elasticsearch_result )
+ElasticSearchResult::__construct( array $elasticsearch_result, array $renamed_fields = array() )
 ```
 
 
@@ -469,6 +486,7 @@ ElasticSearchResult::__construct( array $elasticsearch_result )
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `$elasticsearch_result` | **array** |  |
+| `$renamed_fields` | **array** |  |
 
 
 
@@ -546,4 +564,4 @@ ElasticSearchResult::jsonSerialize(  )
 
 
 --------
-> This document was automatically generated from source code comments on 2018-08-07 using [phpDocumentor](http://www.phpdoc.org/) and [cvuorinen/phpdoc-markdown-public](https://github.com/cvuorinen/phpdoc-markdown-public)
+> This document was automatically generated from source code comments on 2019-02-08 using [phpDocumentor](http://www.phpdoc.org/) and [cvuorinen/phpdoc-markdown-public](https://github.com/cvuorinen/phpdoc-markdown-public)
