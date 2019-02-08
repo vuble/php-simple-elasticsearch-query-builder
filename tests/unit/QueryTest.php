@@ -841,21 +841,50 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
-    public function test_getRequestTimeout()
+    public function test_getTimeout()
     {
-
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
-        $query->setRequestTimeout( '1h' );
+        $query->setTimeout( '1h' );
         $this->assertEquals(
             '1h'
             , $query->getSearchParams()['body']['timeout']
         );
 
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );
-        $query->setRequestTimeout( '30s' );
+        $query->setTimeout( '30s' );
         $this->assertEquals(
             '30s'
             , $query->getSearchParams()['body']['timeout']
+        );
+    }
+
+    /**
+     */
+    public function test_supportedOperationTypes()
+    {
+        $this->assertEquals(
+            [
+                // scalar results
+                ElasticSearchQuery::COUNT,
+                ElasticSearchQuery::AVERAGE,
+                ElasticSearchQuery::MAX,
+                ElasticSearchQuery::MIN,
+                ElasticSearchQuery::SUM,
+                ElasticSearchQuery::HISTOGRAM,
+                // ElasticSearchQuery::VALUE_COUNT,
+
+                ElasticSearchQuery::CARDINALITY,
+                ElasticSearchQuery::PERCENTILES,
+                // ElasticSearchQuery::PERCENTILES_RANKS,
+                // ElasticSearchQuery::STATS,
+                ElasticSearchQuery::EXTENDED_STATS,
+                // ElasticSearchQuery::GEO_BOUNDS,
+                // ElasticSearchQuery::GEO_CENTROID,
+                ElasticSearchQuery::SCRIPT,
+                ElasticSearchQuery::CUSTOM,
+                ElasticSearchQuery::INLINE,
+            ],
+            ElasticSearchQuery::supportedOperationTypes()
         );
     }
 

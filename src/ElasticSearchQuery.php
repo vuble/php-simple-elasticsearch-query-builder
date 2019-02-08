@@ -691,7 +691,7 @@ class ElasticSearchQuery implements \JsonSerializable
     /**
      *
      */
-    protected function supportedQueryTypes()
+    public static function supportedOperationTypes()
     {
         return [
             // scalar results
@@ -736,7 +736,7 @@ class ElasticSearchQuery implements \JsonSerializable
     {
         $change_aggregation_level = false;
 
-        if ( ! in_array($type, $this->supportedQueryTypes())) {
+        if (! in_array($type, static::supportedOperationTypes())) {
             throw new \ErrorException('Unimplemented type of ES query: '
                 . $type);
         }
