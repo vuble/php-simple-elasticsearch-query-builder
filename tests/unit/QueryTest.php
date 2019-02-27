@@ -721,7 +721,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         // normal leaf average operation
         $this->assertEquals(
             [
-                'calculation_filters_6d3c4d81321c3c4dc7ba7ac394494c8d' => [
+                'filters_6d3c4d81321c3c4dc7ba7ac394494c8d' => [
                     'filters' => [
                         'filters' => [
                             'errors' => [

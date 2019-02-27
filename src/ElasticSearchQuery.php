@@ -766,7 +766,7 @@ class ElasticSearchQuery implements \JsonSerializable
             return $this;
         }
         elseif ($type == self::FILTERS) {
-            $name = 'calculation_filters_'.hash('md4', serialize($parameters));
+            $name = 'filters_'.hash('md4', serialize($parameters));
             $params = [
                 'filters' => $parameters,
             ];

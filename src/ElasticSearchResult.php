@@ -188,7 +188,15 @@ class ElasticSearchResult implements \JsonSerializable
 
         foreach ($aggregation_node as $aggregation_key => $aggregation_entry) {
             // look for operations
-            if ($operation_key = $this->findCalculationKey($aggregation_key, $aggregation_entry)) {
+
+            if ($operation_key = $this->findFiltersKey($aggregation_key, $aggregation_entry)) {
+                foreach ($aggregation_node[ $operation_key['key'] ]['buckets'] as $filters_bucket_key => $filters_bucket) {
+                    $previous_operations_values[
+                        $operation_key['type'] . '_' . $filters_bucket_key
+                    ] = $filters_bucket['doc_count'];
+                }
+            }
+            elseif ($operation_key = $this->findCalculationKey($aggregation_key, $aggregation_entry)) {
                 // extract values from operation aggregations
                 $previous_operations_values[
                     $operation_key['type'] . '_' . $operation_key['field']
@@ -229,11 +237,6 @@ class ElasticSearchResult implements \JsonSerializable
                 ] = $aggregation_entry;
             }
         }
-
-        // print_r([
-            // 'group_by' => $previous_group_by_values,
-            // 'operations' => $previous_operations_values,
-        // ]);
 
         // Look for branch aggregations (grouping / terms / ...)
         $non_leaf_sub_aggregations_count = 0;
@@ -509,6 +512,21 @@ class ElasticSearchResult implements \JsonSerializable
                 'key'   => $key,
                 'type'  => 'filter',
                 'field' => $this->renameField($result[1]),
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if an aggregation is a filters one.
+     */
+    protected function findFiltersKey($key, $aggregation_entry)
+    {
+        if (preg_match('/^filters_([^_]+)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'type'  => 'filters',
             ];
         }
 

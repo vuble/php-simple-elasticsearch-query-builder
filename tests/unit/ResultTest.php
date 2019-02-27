@@ -691,6 +691,48 @@ class ResultTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_getAsSqlResult_filters_aggregation()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                "aggregations" => [
+                    "filters_0abebf637b9e4e88208c14addcf966db" => [
+                        'buckets' => [
+                            'left' => [
+                                'doc_count' => 2266,
+                            ],
+                            'center' => [
+                                'doc_count' => 21807,
+                            ],
+                            'right' => [
+                                'doc_count' => 10083,
+                            ],
+                            'other' => [
+                                'doc_count' => 10,
+                            ],
+                        ],
+                    ],
+                ],
+            ]
+        ))
+        ->getAsSqlResult()
+        ;
+
+        $this->assertEquals(
+            [
+                0 => [
+                    'filters_left'   => 2266,
+                    'filters_center' => 21807,
+                    'filters_right'  => 10083,
+                    'filters_other'  => 10,
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
+     */
     public function test_getAsSqlResult_operation_on_script_aggregation()
     {
         // ne rsult case
