@@ -40,7 +40,7 @@ class ElasticSearchQuery implements \JsonSerializable
     const VALUE_COUNT       = 'value_count';
     const SCRIPT            = 'script';
     const HISTOGRAM         = 'histogram';
-    const CUSTOM            = 'custom';
+    const FILTERS           = 'filters';
     const INLINE            = 'inline'; // aggregations provide directly as ES json DSL
 
     /** @var string MISSING_AGGREGATION_FIELD
@@ -711,8 +711,10 @@ class ElasticSearchQuery implements \JsonSerializable
             // self::GEO_BOUNDS,
             // self::GEO_CENTROID,
             self::SCRIPT,
-            self::CUSTOM,
-            self::INLINE,
+            // self::FILTER,               // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-filter-aggregation.html
+            self::FILTERS,              // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-filters-aggregation.html
+
+            self::INLINE,               // parameters injected directly
         ];
     }
 
@@ -763,12 +765,10 @@ class ElasticSearchQuery implements \JsonSerializable
             // aggregations
             return $this;
         }
-        elseif ($type == self::CUSTOM) {
-            $name   = 'calculation_custom_'
-                    . $parameters['field']
-                    . '_'.hash('md4', serialize($parameters['specific_filters']));
+        elseif ($type == self::FILTERS) {
+            $name = 'calculation_filters_'.hash('md4', serialize($parameters));
             $params = [
-                'filters' => $parameters['specific_filters'],
+                'filters' => $parameters,
             ];
         }
         elseif ($type == self::INLINE) {

@@ -567,10 +567,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 'field' => 'field-for-histogram',
                 'interval' => 2,
             ])
-            ->addOperationAggregation( ElasticSearchQuery::CUSTOM, [
-                'field'            => 'field-for-custom',
-                'specific_filters' => 'custom_filters',
-            ])
             ;
 
 
@@ -598,12 +594,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['histogram_field-for-histogram_2']);
 
         $this->assertEquals([
-            'filters' => 'custom_filters'
-        ], $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']
-                                            ['calculation_custom_field-for-custom_c5438a396e5e1b0c693a325c0403c4f3']
-        );
-
-        $this->assertEquals([
               'renamed_field'        => 'field_to_rename',
               'field_with_good_name' => 'field_with_good_name',
               'field_to_groupon'     => 'field_to_groupon',
@@ -627,10 +617,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ->addOperationAggregation( ElasticSearchQuery::HISTOGRAM, [
                 'field' => 'field-for-histogram',
                 'interval' => 2,
-            ])
-            ->addOperationAggregation( ElasticSearchQuery::CUSTOM, [
-                'field'            => 'field-for-custom',
-                'specific_filters' => 'custom_filters',
             ])
             ->addOperationAggregation( ElasticSearchQuery::SCRIPT, [
                 'field'  => 'field-filled-by-script',
@@ -714,55 +700,43 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
-    public function test_addOperationAggregation_inline()
+    public function test_addOperationAggregation_filters()
     {
         $query = new ElasticSearchQuery;
 
-        $query
-            // ->setNestedFields(['nested_field'])
-            // ->groupBy('nested_field')
-            ->addOperationAggregation(
-                ElasticSearchQuery::INLINE,
-                [
-                    "width_ratio.mean" => [
-                        "terms" => [
-                            "field" => "width_ratio.mean",
-                            "script" => "Math.round( 16 * _value )",
-                            "size" => 0
-                        ],
-                        "aggregations" => [
-                            "height_ratio.mean" => [
-                                "terms" => [
-                                    "field" => "height_ratio.mean",
-                                    "script" => "Math.round( 9 * _value )",
-                                    "size" => 0
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            )
-            ;
+        $query->addOperationAggregation(
+            ElasticSearchQuery::FILTERS,
+            [
+                'filters' => [
+                    "errors"   => ["match" => ["body" => "error"]],
+                    "warnings" => ["match" => ["body" => "warning"]],
+                ],
+                'other_bucket'     => true,
+                'other_bucket_key' => 'lalala',
+            ]
+        );
 
         $es_query = $query->getSearchParams();
 
         // normal leaf average operation
         $this->assertEquals(
             [
-                "inline_width_ratio.mean" => [
-                    "terms" => [
-                        "field" => "width_ratio.mean",
-                        "script" => "Math.round( 16 * _value )",
-                        "size" => 0
-                    ],
-                    "aggregations" => [
-                        "height_ratio.mean" => [
-                            "terms" => [
-                                "field" => "height_ratio.mean",
-                                "script" => "Math.round( 9 * _value )",
-                                "size" => 0
+                'calculation_filters_6d3c4d81321c3c4dc7ba7ac394494c8d' => [
+                    'filters' => [
+                        'filters' => [
+                            'errors' => [
+                                'match' => [
+                                    'body' => 'error',
+                                ],
+                            ],
+                            'warnings' => [
+                                'match' => [
+                                    'body' => 'warning',
+                                ],
                             ],
                         ],
+                        'other_bucket' => true,
+                        'other_bucket_key' => 'lalala',
                     ],
                 ],
             ],
@@ -881,7 +855,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
                 // ElasticSearchQuery::GEO_BOUNDS,
                 // ElasticSearchQuery::GEO_CENTROID,
                 ElasticSearchQuery::SCRIPT,
-                ElasticSearchQuery::CUSTOM,
+                ElasticSearchQuery::FILTERS,
                 ElasticSearchQuery::INLINE,
             ],
             ElasticSearchQuery::supportedOperationTypes()
