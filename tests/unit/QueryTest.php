@@ -746,6 +746,69 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_addOperationAggregation_count_by()
+    {
+        /* NON-NESTED */
+        $query = new ElasticSearchQuery;
+        $query->setNestedFields(['my_nested_field']);
+        try {
+            $query->addOperationAggregation(
+                ElasticSearchQuery::COUNT,
+                ['field' => 'my_non-nested_field']
+            );
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertEquals(
+                "COUNT operation is only applicable to nested fields or the whole index instead of 'my_non-nested_field'. You are maybe looking for CARDINALITY aggregation",
+                $e->getMessage()
+            );
+        }
+
+        /* COUNT NESTED ENTRY ITSELF */
+        $query = new ElasticSearchQuery;
+        $query->setNestedFields(['my_nested_field']);
+
+        $query->addOperationAggregation(
+            ElasticSearchQuery::COUNT,
+            ['field' => 'my_nested_field']
+        );
+
+        $es_query = $query->getSearchParams();
+        // var_export($es_query);
+
+        //
+        $this->assertEquals(
+            [
+                'count_nested_my_nested_field' => [
+                    'nested' => [
+                        'path' => 'my_nested_field',
+                    ],
+                ],
+            ],
+            $es_query['body']['aggregations']
+        );
+
+        /* COUNT NESTED SUB-ENTRY */
+        $query = new ElasticSearchQuery;
+        $query->setNestedFields(['my_nested_field']);
+        try {
+            $query->addOperationAggregation(
+                ElasticSearchQuery::COUNT,
+                [ 'field' => 'my_nested_field.sub_entry']
+            );
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertEquals(
+                "COUNT operation is only applicable to nested fields or the whole index instead of 'my_nested_field.sub_entry'. You are maybe looking for CARDINALITY aggregation",
+                $e->getMessage()
+            );
+        }
+
+        /**/
+    }
+
+    /**
+     */
     public function test_json_encode()
     {
         $query = new ElasticSearchQuery( ElasticSearchQuery::COUNT );

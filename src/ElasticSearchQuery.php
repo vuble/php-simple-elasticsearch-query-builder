@@ -87,11 +87,11 @@ class ElasticSearchQuery implements \JsonSerializable
     /**
      * groupBy corresponds to the most basic aggregation type.
      */
-    public function groupBy($field_alias, array $aggregation_parameters=[])
+    public function groupBy($field_alias, array $aggregation_parameters=[], $is_count_group_by=false)
     {
         $field = $this->renameField($field_alias);
 
-        if (!$aggregation_parameters) {
+        if (! $aggregation_parameters) {
             // default aggregagtion is by term
             $aggregation_parameters = [
                 'terms' => [
@@ -107,7 +107,7 @@ class ElasticSearchQuery implements \JsonSerializable
             // Merging/Reducing the aggregations failed when computing the aggregation [ Name: group_by_deals.win, Type: terms ] because: the field you gave in the aggregation query existed as two different types in two different indices
 
             // We need to aggregate on the nested path first
-            if (!isset($this->group_by_aggregations_on_nested_fields[$nesting_field])) {
+            if (! isset($this->group_by_aggregations_on_nested_fields[$nesting_field])) {
                 $this->group_by_aggregations_on_nested_fields['nested_'.$nesting_field] = [
                     'nested' => [
                         'path' => $nesting_field,
@@ -115,11 +115,12 @@ class ElasticSearchQuery implements \JsonSerializable
                 ];
             }
 
-            if (!isset($this->group_by_aggregations_on_nested_fields[$field]))
+            if ($nesting_field != $field && ! isset($this->group_by_aggregations_on_nested_fields[$field])) {
                 $this->group_by_aggregations_on_nested_fields['group_by_'.$field_alias] = $aggregation_parameters;
+            }
         }
         else {
-            $this->aggregate('group_by_'.$field_alias, $aggregation_parameters);
+            $this->aggregate($field_alias, $aggregation_parameters);
         }
 
         return $this;
@@ -739,8 +740,10 @@ class ElasticSearchQuery implements \JsonSerializable
         $change_aggregation_level = false;
 
         if (! in_array($type, static::supportedOperationTypes())) {
-            throw new \ErrorException('Unimplemented type of ES query: '
-                . $type);
+            throw new \ErrorException(
+                'Unimplemented type of ES aggregation: '
+                . $type
+            );
         }
 
         $this->operations[] = [
@@ -761,9 +764,32 @@ class ElasticSearchQuery implements \JsonSerializable
             ];
         }
         elseif ($type == self::COUNT) {
-            // COUNT is calculated as a simple SEARCH ES query to enable
-            // aggregations
-            return $this;
+
+            if (! isset($parameters['field'])) {
+                // count all the documents matching
+                return $this;
+            }
+
+            $field = $this->renameField($parameters['field']);
+
+            if ($this->fieldIsNested($field, $nesting_field) && $nesting_field == $field) {
+                $name = 'count_nested_'.$field;
+                $params = [
+                    'nested' => [
+                        'path' => $nesting_field,
+                    ]
+                ];
+            }
+            else {
+                // Semantically COUNT on a field which is not a nested field seems to be
+                // a CARDINALITY aggregation: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-cardinality-aggregation.html
+                // TODO investigate it
+                throw new \InvalidArgumentException(
+                    "COUNT operation is only applicable to nested fields or the whole index "
+                    ."instead of ".var_export($field, true)
+                    .". You are maybe looking for CARDINALITY aggregation"
+                );
+            }
         }
         elseif ($type == self::FILTERS) {
             $name = 'filters_'.hash('md4', serialize($parameters));
