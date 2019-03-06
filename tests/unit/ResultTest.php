@@ -735,6 +735,7 @@ class ResultTest extends \PHPUnit_Framework_TestCase
      */
     public function test_getAsSqlResult_count_nested_aggregation()
     {
+        // WITHOUT NESTED GROUP_BY
         $result = (new ElasticSearchResult(
             [
                 "aggregations" => [
@@ -749,7 +750,98 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(
             [
                 0 => [
-                    'count_inventory' => 2266,
+                    'total' => 2266,
+                ],
+            ],
+            $result
+        );
+
+        // WITH NON-NESTED GROUP_BY
+        $result = (new ElasticSearchResult(
+            [
+                "hits" => [
+                    "total" => 36185,
+                    "max_score" => 0,
+                    "hits" => []
+                ],
+                "aggregations" => [
+                    "nested_inventory" => [
+                        'doc_count' => 2266,
+                        'group_by_p_id' => [
+                            'doc_count_error_upper_bound' => 0,
+                            'sum_other_doc_count' => 0,
+                            'buckets' => [
+                                [
+                                    'key' => 1,
+                                    'doc_count' => 1000,
+                                ],
+                                [
+                                    'key' => 2,
+                                    'doc_count' => 1266,
+                                ],
+                            ]
+                        ]
+                    ],
+                ],
+            ]
+        ))
+        ->getAsSqlResult();
+
+        $this->assertEquals(
+            [
+                'p_id:1' => [
+                    'total' => 1000,
+                    'p_id' => 1,
+                ],
+                'p_id:2' => [
+                    'total' => 1266,
+                    'p_id' => 2,
+                ],
+            ],
+            $result
+        );
+
+
+        // WITH NESTED GROUP_BY
+        $result = (new ElasticSearchResult(
+            [
+                "hits" => [
+                    "total" => 36185,
+                    "max_score" => 0,
+                    "hits" => []
+                ],
+                "aggregations" => [
+                    "nested_inventory" => [
+                        'doc_count' => 2266,
+                        'group_by_adserver_id' => [
+                            'doc_count_error_upper_bound' => 0,
+                            'sum_other_doc_count' => 0,
+                            'buckets' => [
+                                [
+                                    'key' => 1,
+                                    'doc_count' => 1000,
+                                ],
+                                [
+                                    'key' => 2,
+                                    'doc_count' => 1266,
+                                ],
+                            ]
+                        ]
+                    ],
+                ],
+            ]
+        ))
+        ->getAsSqlResult();
+
+        $this->assertEquals(
+            [
+                'adserver_id:1' => [
+                    'total' => 1000,
+                    'adserver_id' => 1,
+                ],
+                'adserver_id:2' => [
+                    'total' => 1266,
+                    'adserver_id' => 2,
                 ],
             ],
             $result

@@ -198,7 +198,9 @@ class ElasticSearchResult implements \JsonSerializable
             }
             elseif ($operation_key = $this->findCountNestedKey($aggregation_key, $aggregation_entry)) {
                 $previous_operations_values[
-                    $operation_key['type'] . '_' . $operation_key['field']
+                    self::COUNT
+                    // There will be no nested aggregation named like count_nested_* if there is a group by
+                    // a subentry of the nested field so we store this in total like for group_by aggregations
                 ] = $operation_key['value'];
             }
             elseif ($operation_key = $this->findCalculationKey($aggregation_key, $aggregation_entry)) {

@@ -87,7 +87,7 @@ class ElasticSearchQuery implements \JsonSerializable
     /**
      * groupBy corresponds to the most basic aggregation type.
      */
-    public function groupBy($field_alias, array $aggregation_parameters=[], $is_count_group_by=false)
+    public function groupBy($field_alias, array $aggregation_parameters=[])
     {
         $field = $this->renameField($field_alias);
 
@@ -107,20 +107,20 @@ class ElasticSearchQuery implements \JsonSerializable
             // Merging/Reducing the aggregations failed when computing the aggregation [ Name: group_by_deals.win, Type: terms ] because: the field you gave in the aggregation query existed as two different types in two different indices
 
             // We need to aggregate on the nested path first
-            if (! isset($this->group_by_aggregations_on_nested_fields[$nesting_field])) {
+            // if (! isset($this->group_by_aggregations_on_nested_fields['nested_'.$nesting_field])) {
                 $this->group_by_aggregations_on_nested_fields['nested_'.$nesting_field] = [
                     'nested' => [
                         'path' => $nesting_field,
                     ]
                 ];
-            }
+            // }
 
-            if ($nesting_field != $field && ! isset($this->group_by_aggregations_on_nested_fields[$field])) {
+            if (! isset($this->group_by_aggregations_on_nested_fields[$field])) {
                 $this->group_by_aggregations_on_nested_fields['group_by_'.$field_alias] = $aggregation_parameters;
             }
         }
         else {
-            $this->aggregate($field_alias, $aggregation_parameters);
+            $this->aggregate('group_by_'.$field_alias, $aggregation_parameters);
         }
 
         return $this;
@@ -765,7 +765,7 @@ class ElasticSearchQuery implements \JsonSerializable
         }
         elseif ($type == self::COUNT) {
 
-            if (! isset($parameters['field'])) {
+            if (! isset($parameters['field']) || $parameters['field'] == ElasticSearchResult::COUNT) {
                 // count all the documents matching
                 return $this;
             }
@@ -773,12 +773,16 @@ class ElasticSearchQuery implements \JsonSerializable
             $field = $this->renameField($parameters['field']);
 
             if ($this->fieldIsNested($field, $nesting_field) && $nesting_field == $field) {
-                $name = 'count_nested_'.$field;
-                $params = [
-                    'nested' => [
-                        'path' => $nesting_field,
-                    ]
-                ];
+
+                if (! isset($this->group_by_aggregations_on_nested_fields['nested_'.$nesting_field])) {
+                    $this->group_by_aggregations_on_nested_fields['count_nested_'.$nesting_field] = [
+                        'nested' => [
+                            'path' => $nesting_field,
+                        ]
+                    ];
+                }
+
+                return $this;
             }
             else {
                 // Semantically COUNT on a field which is not a nested field seems to be
