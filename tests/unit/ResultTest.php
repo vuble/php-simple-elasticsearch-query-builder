@@ -733,6 +733,31 @@ class ResultTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
+    public function test_getAsSqlResult_count_nested_aggregation()
+    {
+        $result = (new ElasticSearchResult(
+            [
+                "aggregations" => [
+                    "count_nested_inventory" => [
+                        'doc_count' => 2266
+                    ],
+                ],
+            ]
+        ))
+        ->getAsSqlResult();
+
+        $this->assertEquals(
+            [
+                0 => [
+                    'count_inventory' => 2266,
+                ],
+            ],
+            $result
+        );
+    }
+
+    /**
+     */
     public function test_getAsSqlResult_operation_on_script_aggregation()
     {
         // ne rsult case

@@ -196,6 +196,11 @@ class ElasticSearchResult implements \JsonSerializable
                     ] = $filters_bucket['doc_count'];
                 }
             }
+            elseif ($operation_key = $this->findCountNestedKey($aggregation_key, $aggregation_entry)) {
+                $previous_operations_values[
+                    $operation_key['type'] . '_' . $operation_key['field']
+                ] = $operation_key['value'];
+            }
             elseif ($operation_key = $this->findCalculationKey($aggregation_key, $aggregation_entry)) {
                 // extract values from operation aggregations
                 $previous_operations_values[
@@ -543,6 +548,23 @@ class ElasticSearchResult implements \JsonSerializable
                 'key'   => $key,
                 'type'  => 'nested',
                 'field' => $this->renameField($result[1]),
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if an aggregation is a group_by one.
+     */
+    protected function findCountNestedKey($key, $aggregation_entry)
+    {
+        if (preg_match('/^count_nested_(.*)$/', $key, $result)) {
+            return [
+                'key'   => $key,
+                'type'  => 'count',
+                'field' => $this->renameField($result[1]),
+                'value' => $aggregation_entry['doc_count'],
             ];
         }
 
