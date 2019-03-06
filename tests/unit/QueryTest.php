@@ -653,14 +653,6 @@ class QueryTest extends \PHPUnit_Framework_TestCase
             ],
             $es_query['body']['aggregations']['group_by_field_to_groupon']['aggregations']['script_field-filled-by-script']
         );
-
-        // COUNT do not require aggregation
-        $query = new ElasticSearchQuery;
-        $query
-            ->addOperationAggregation( ElasticSearchQuery::COUNT, ['field' => 'field'], false);
-        $es_query = $query->getSearchParams();
-
-        $this->assertEquals(false, isset($es_query['body']['aggregations']));
     }
 
     /**
@@ -746,8 +738,20 @@ class QueryTest extends \PHPUnit_Framework_TestCase
 
     /**
      */
-    public function test_addOperationAggregation_count_by()
+    public function test_addOperationAggregation_count()
     {
+        // all index
+        $query = new ElasticSearchQuery;
+        $query->addOperationAggregation( ElasticSearchQuery::COUNT );
+        $es_query = $query->getSearchParams();
+        $this->assertEquals(false, isset($es_query['body']['aggregations']));
+
+        // ElasticSearchResult::COUNT used as an alias of no field specified
+        $query = new ElasticSearchQuery;
+        $query->addOperationAggregation( ElasticSearchQuery::COUNT, ['field' => ElasticSearchResult::COUNT]);
+        $es_query = $query->getSearchParams();
+        $this->assertEquals(false, isset($es_query['body']['aggregations']));
+
         /* NON-NESTED */
         $query = new ElasticSearchQuery;
         $query->setNestedFields(['my_nested_field']);
@@ -774,9 +778,7 @@ class QueryTest extends \PHPUnit_Framework_TestCase
         );
 
         $es_query = $query->getSearchParams();
-        // var_export($es_query);
 
-        //
         $this->assertEquals(
             [
                 'count_nested_my_nested_field' => [
