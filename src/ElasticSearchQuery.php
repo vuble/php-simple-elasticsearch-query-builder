@@ -165,8 +165,10 @@ class ElasticSearchQuery implements \JsonSerializable
 
         // buggy with date_histogram
         if ($aggregation_type == 'terms') {
-            // No limit of data to aggregate on
-            $aggregation_parameters[$aggregation_type]['size'] = 10000;
+            // Default limit to 10000 terms
+            if(!isset($aggregation_parameters[$aggregation_type]['size'])) {
+                $aggregation_parameters[$aggregation_type]['size'] = 10000;
+            }
             // null not supported for "missing" option
             if (empty($aggregation_parameters[$aggregation_type]['script']))
                 $aggregation_parameters[$aggregation_type]['missing'] = self::MISSING_AGGREGATION_FIELD;
