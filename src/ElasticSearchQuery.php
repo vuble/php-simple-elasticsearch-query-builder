@@ -245,13 +245,9 @@ class ElasticSearchQuery implements \JsonSerializable
             "nested" => [
                 'path' => $nesting_field,
                 'query' => [
-                    'filtered' => [
-                        "filter" => [
-                            "bool" => [
-                                "must" => [
-                                    $filter
-                                ],
-                            ]
+                    "bool" => [
+                        "must" => [
+                            $filter
                         ]
                     ]
                 ],
