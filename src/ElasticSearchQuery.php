@@ -167,7 +167,7 @@ class ElasticSearchQuery implements \JsonSerializable
         if ($aggregation_type == 'terms') {
             // Default limit to 10000 terms
             if(!isset($aggregation_parameters[$aggregation_type]['size'])) {
-                $aggregation_parameters[$aggregation_type]['size'] = 10000;
+                $aggregation_parameters[$aggregation_type]['size'] = 1000;
             }
             // null not supported for "missing" option
             if (empty($aggregation_parameters[$aggregation_type]['script']))
